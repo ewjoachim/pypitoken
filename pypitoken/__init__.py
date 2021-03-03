@@ -4,6 +4,7 @@ from .exceptions import (
     PyPITokenException,
     ValidationError,
 )
+from .pypirc import get_token_from_pypirc
 from .token import Token
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "PyPITokenException",
     "Token",
     "ValidationError",
+    "get_token_from_pypirc",
 ]
