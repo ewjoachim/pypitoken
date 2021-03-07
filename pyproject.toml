@@ -3,21 +3,26 @@ name = "pypitoken"
 version = "0.1.0"
 description = "Manipulate PyPI API tokens"
 authors = ["Joachim Jablon <ewjoachim@gmail.com>"]
+classifiers = [
+    "Topic :: Security",
+    "Topic :: System :: Archiving :: Packaging"
+]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
 pymacaroons = "^0.13.0"
-jsonschema = "^3.2.0"
+jsonschema = "*"
+dataclasses = { version = "*", python = "~3.6" }
+
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.10.1"
 pytest = "^5.2"
-black = "^20.8b1"
-isort = "^5.7.0"
-flake8 = "^3.8.4"
-mypy = "^0.812"
-pyupgrade = "^2.10.0"
 pytest-cov = "^2.11.1"
+Sphinx = "^3.5.1"
+sphinx-material = "^0.0.32"
+sphinx-github-changelog = "^1.0.2"
+sphinx-autodoc-typehints = "^1.11.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

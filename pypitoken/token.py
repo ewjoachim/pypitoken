@@ -50,6 +50,10 @@ class Restriction:
 
 @dataclasses.dataclass
 class NoopRestriction(Restriction):
+    """
+    Says it restricts the `Token`, but doesn't actually restrict it.
+    """
+
     @staticmethod
     def get_schema() -> Dict:
         return {
@@ -75,6 +79,15 @@ class NoopRestriction(Restriction):
 
 @dataclasses.dataclass
 class ProjectsRestriction(Restriction):
+    """
+    Restrict a `Token` to uploading releases for a specific set of packages.
+
+    Attributes
+    ----------
+    projects :
+        Normalized project names this token may upload to.
+    """
+
     projects: List[str]
 
     @staticmethod
@@ -208,16 +221,20 @@ class Token:
 
     Attributes
     ----------
-    prefix :
+    prefix : str
         PyPI tokens are usually prefixed with ``pypi``, but this is arbitrary
-    domain :
+    domain : str
         PyPI tokens are attached to a specific domain, usually ``pypi.org`` or
         ``test.pypi.org``
-    identifier :
+    identifier : str
         This part is how PyPI will find a token in its database and associate it to a
         specific user. Even when additional restrictions are added to a token, the
         identifier will still be readable in the token. While this is not exactly
         a secret part of the token, it's best to keep it reasonably private.
+    _macaroon : pymacarrons.Macaroon
+        This is part of the private API and may be subject to change at any time.
+        This gives you access to the underlying Macaroon, if you need to do low-level
+        operations, or just want to poke around.
     """
 
     def __init__(self, prefix: str, macaroon: pymacaroons.Macaroon):
@@ -304,7 +321,7 @@ class Token:
         key :
             Secret key used to validate the token. Having the key of a token would
             allow removing existing restrictions.
-        prefix : optionnal
+        prefix :
             PyPI tokens are usually prefixed with ``pypi`` which is the default value
             for this parameter.
         version :
@@ -346,7 +363,7 @@ class Token:
 
         Parameters
         ----------
-        projects : Optional[List[str]], optional
+        projects :
             Restrict the token to uploading releases only for projects with these
             normalized names, by default None (no restriction)
 
@@ -371,6 +388,18 @@ class Token:
             self._macaroon.add_first_party_caveat(caveat)
 
         return self
+
+    def dump(self) -> str:
+        """
+        Generates a string representing the token. This could be used for
+        API authentication against PyPI.
+
+        Returns
+        -------
+        str
+            The token
+        """
+        return f"{self.prefix}-{self._macaroon.serialize()}"
 
     def check(
         self,
@@ -435,15 +464,3 @@ class Token:
             load_restriction(caveat=caveat.caveat_id)
             for caveat in self._macaroon.caveats
         ]
-
-    def dump(self) -> str:
-        """
-        Generates a string representing the token. This could be used for
-        API authentication against PyPI.
-
-        Returns
-        -------
-        str
-            The token
-        """
-        return f"{self.prefix}-{self._macaroon.serialize()}"
