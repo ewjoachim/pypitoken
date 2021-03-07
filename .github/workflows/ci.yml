@@ -35,20 +35,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: set PY
-        run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-
-      - name: Cache poetry
+      - name: Cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: poetry-${{ env.PY }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Cache pre-commit
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ env.PY }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pre-commit
+          key: ${{ matrix.tox-env }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         run: |
