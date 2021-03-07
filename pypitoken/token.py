@@ -306,7 +306,7 @@ class Token:
     ) -> "Token":
         """
         Create a token. Initially, it has no restruction, but they can be added
-        with derive.
+        with restrict.
         In order to create the token, you will need to provide a key. This key is the
         secret part of the token. When checking a macaroon validity, you will need to
         provide the same key.
@@ -342,7 +342,7 @@ class Token:
         token = cls(prefix=prefix, macaroon=macaroon)
         return token
 
-    def derive(
+    def restrict(
         self,
         projects: Optional[List[str]] = None,
     ) -> "Token":

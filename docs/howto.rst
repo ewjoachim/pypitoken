@@ -33,9 +33,9 @@ Load your existing token::
 
 Add restrictions, for example restrict it to a given project::
 
-    token.derive(projects=["sphinx"])
+    token.restrict(projects=["sphinx"])
 
-See `Token.derive` for the list of possible restrictions.
+See `Token.restrict` for the list of possible restrictions.
 
 Then dump the token::
 

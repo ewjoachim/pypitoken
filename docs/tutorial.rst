@@ -143,7 +143,7 @@ Now let's implement our ``add_restriction`` function in ``tutorial.py``::
         token = Token.load(raw_token)
         print("Original restrictions:", token.restrictions, file=sys.stderr)
 
-        token.derive(projects=[project])
+        token.restrict(projects=[project])
         print("New restrictions:", token.restrictions, file=sys.stderr)
 
         return token.dump()
@@ -155,7 +155,7 @@ Going line by line:
 - ``print(...)``: This is a debug step, that will show us the
   restrictions our token contains. When called the second time, it should contain
   our new restriction.
-- ``token.derive(projects=[project])`` adds new restrictions to our token. Here, we're
+- ``token.restrict(projects=[project])`` adds new restrictions to our token. Here, we're
   using the ``projects`` keywords which expects a list of projects, but we only
   have a single project to pass, so we make a list with a single object.
 - ``return token.dump()``: Then we turn our modified token back int a string and return

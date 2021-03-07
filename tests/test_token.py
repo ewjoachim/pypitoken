@@ -332,31 +332,31 @@ def test__Token__create():
     assert tok.dump() == raw
 
 
-def test__Token__derive__empty(create_token):
+def test__Token__restrict__empty(create_token):
 
     tok = create_token()
     assert tok._macaroon.caveats == []
-    tok.derive()
+    tok.restrict()
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
     assert caveats == ['{"version": 1, "permissions": "user"}']
 
 
-def test__Token__derive__projects(create_token):
+def test__Token__restrict__projects(create_token):
 
     tok = create_token()
     assert tok._macaroon.caveats == []
-    tok.derive(projects=["a", "b"])
+    tok.restrict(projects=["a", "b"])
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
     assert caveats == ['{"version": 1, "permissions": {"projects": ["a", "b"]}}']
 
 
-def test__Token__derive__multiple(create_token):
+def test__Token__restrict__multiple(create_token):
 
     tok = create_token()
     assert tok._macaroon.caveats == []
-    tok.derive()
-    tok.derive(projects=["a", "b"])
-    tok.derive(projects=["a", "d"])
+    tok.restrict()
+    tok.restrict(projects=["a", "b"])
+    tok.restrict(projects=["a", "d"])
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
     assert caveats == [
         '{"version": 1, "permissions": "user"}',
@@ -368,14 +368,14 @@ def test__Token__derive__multiple(create_token):
 def test__Token__check__pass(create_token):
 
     tok = create_token(key="ohsosecret")
-    tok.derive(projects=["a", "b"])
+    tok.restrict(projects=["a", "b"])
     tok.check(key="ohsosecret", project="a")
 
 
 def test__Token__check__fail__signature(create_token):
 
     tok = create_token(key="ohsosecret")
-    tok.derive(projects=["a", "b"])
+    tok.restrict(projects=["a", "b"])
     with pytest.raises(exceptions.ValidationError):
         tok.check(key="notthatsecret", project="a")
 
@@ -383,7 +383,7 @@ def test__Token__check__fail__signature(create_token):
 def test__Token__check__fail__caveat(create_token):
 
     tok = create_token(key="ohsosecret")
-    tok.derive(projects=["a", "b"])
+    tok.restrict(projects=["a", "b"])
     with pytest.raises(exceptions.ValidationError):
         tok.check(key="ohsosecret", project="c")
 
@@ -391,9 +391,9 @@ def test__Token__check__fail__caveat(create_token):
 def test__Token__restrictions(create_token):
 
     tok = create_token()
-    tok.derive()
-    tok.derive(projects=["a", "b"])
-    tok.derive(projects=["a", "d"])
+    tok.restrict()
+    tok.restrict(projects=["a", "b"])
+    tok.restrict(projects=["a", "d"])
     assert tok.restrictions == [
         token.NoopRestriction(),
         token.ProjectsRestriction(projects=["a", "b"]),
