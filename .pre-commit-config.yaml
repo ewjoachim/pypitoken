@@ -33,3 +33,8 @@ repos:
   rev: "v2.10.0"
   hooks:
   - id: pyupgrade
+
+- repo: https://github.com/PyCQA/doc8
+  rev: "0.8.1"
+  hooks:
+  - id: doc8

@@ -4,12 +4,14 @@ from .exceptions import (
     PyPITokenException,
     ValidationError,
 )
-from .token import Token
+from .token import NoopRestriction, ProjectsRestriction, Token
 
 __all__ = [
+    "Token",
+    "NoopRestriction",
+    "ProjectsRestriction",
+    "PyPITokenException",
     "LoadError",
     "MissingContextError",
-    "PyPITokenException",
-    "Token",
     "ValidationError",
 ]
