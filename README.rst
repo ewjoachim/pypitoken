@@ -59,7 +59,7 @@ Here's an example:
     print(token.restrictions)
     # [NoopRestriction()]
 
-    token.derive(projects=["requests"])
+    token.restrict(projects=["requests"])
 
     print(token.restrictions)
     # [NoopRestriction(), ProjectsRestriction(projects=["requests"])]
