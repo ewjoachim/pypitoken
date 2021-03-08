@@ -4,4 +4,4 @@ set -eu
 # This script is not meant to run inside poetry
 
 poetry version $(poetry run dunamai from git --pattern '(?P<base>\d+\.\d+\.\d+)')
-poetry publish --username "__token__" --password "$1"
+poetry publish --no-interaction --build --username "__token__" --password "$1"
