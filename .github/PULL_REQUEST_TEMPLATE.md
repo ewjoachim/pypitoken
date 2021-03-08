@@ -1,6 +1,6 @@
 Closes #<ticket number>
 
-### Successful PR Checklist:
+### Checklist:
 <!-- In case of doubt, we're here to help. CONTRIBUTING.rst might help too -->
 - [ ] Tests
   - [ ] (not applicable?)
