@@ -34,8 +34,5 @@ jobs:
       - name: Install dependencies
         run: pip install poetry
 
-      - name: Adjust version to the current tag
-        run: poetry version $(poetry run dunamai from git --pattern '(?P<base>\d+\.\d+\.\d+)')
-
-      - name: Publish to PyPI
-        run: poetry publish --username "__token__" --password "${{ secrets.PYPI_TOKEN }}"
+      - name: Publish on PyPI
+        run: scripts/publish "${{ secrets.PYPI_TOKEN }}"
