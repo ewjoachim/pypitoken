@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pypitoken"
-version = "0.1.0"
+version = "0.0.0"
 description = "Manipulate PyPI API tokens"
 authors = ["Joachim Jablon <ewjoachim@gmail.com>"]
 classifiers = [
@@ -23,6 +23,7 @@ Sphinx = "^3.5.1"
 sphinx-material = "^0.0.32"
 sphinx-github-changelog = "^1.0.2"
 sphinx-autodoc-typehints = "^1.11.1"
+dunamai = "^1.5.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

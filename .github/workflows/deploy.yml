@@ -19,20 +19,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: success
+
       - name: Exit if CI did not succeed
         if: steps.wait-for-ci.outputs.conclusion != 'success'
         run: exit 1
+
       - uses: actions/checkout@v2
+
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.x
+
       - name: Install dependencies
-        run: pip install build
-      - name: Build the wheel
-        run: python -m build
+        run: pip install poetry
+
+      - name: Adjust version to the current tag
+        run: poetry version $(poetry run dunamai from git --pattern '(?P<base>\d+\.\d+\.\d+)')
+
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+        run: poetry publish --username "__token__" --password "${{ secrets.PYPI_TOKEN }}"
