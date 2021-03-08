@@ -58,3 +58,11 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  report-status:
+    name: success
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Report success
+        run: echo 'Success !'
