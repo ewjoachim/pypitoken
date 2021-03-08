@@ -31,8 +31,11 @@ jobs:
         with:
           python-version: 3.x
 
-      - name: Install dependencies
+      - name: Install Poetry
         run: pip install poetry
+
+      - name: Install Dev dependencies
+        run: poetry install
 
       - name: Publish on PyPI
         run: scripts/publish "${{ secrets.PYPI_TOKEN }}"
