@@ -74,16 +74,19 @@ for this to happen.
 The aim of this library is to provide a simple toolbelt for manipulating PyPI tokens.
 Ideally, someday, PyPI (Warehouse_) itself may generate their tokens using this
 library too. This should make it easier to iterate on new kinds of restrictions for
-PyPI tokens, such as those discussed in the `original implementation issue`__:
-
-- Tokens scoped to a specific time interval
-- Tokens scoped to uploading a given version
-- Tokens scopes to uploading a given release
-- Tokens scopes to uploading a file with a given hash
-- (Maybe even one-time tokens)
+PyPI tokens, such as those discussed in the `original implementation issue`__.
 
 .. _Warehouse: https://github.com/pypa/warehouse/
 .. __: https://github.com/pypa/warehouse/issues/994
+
+A discussion for integrating this library to the Warehouse environment is ongoing:
+
+- In the `Python Packaging discussions`_ for putting the project under the PyPA umbrella
+- In the `Warehouse tracker`_ for replacing the current macaroon implementation with
+  this lib
+
+.. _`Python Packaging discussions`: https://discuss.python.org/t/pypitoken-a-library-for-generating-and-manipulating-pypi-tokens/7572
+.. _`Warehouse tracker`: https://github.com/pypa/warehouse/issues/9184
 
 .. Below this line is content specific to the README that will not appear in the doc.
 .. end-of-index-doc
