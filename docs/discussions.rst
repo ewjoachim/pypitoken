@@ -69,10 +69,23 @@ The caveats are json-encoded strings, and as of March 2021, they come in 2 flavo
 
 - ``"{"version": 1, "permissions": "user"}"`` (note: it's the string ``"user"`` here,
   not a placeholder for the username), which is always met. It's represented in this
-  library by the class ``NoopPermission``,
+  library by the class `NoopRestriction`,
 - ``"{"version": 1, "permissions": {"projects": ["<project name>", ...]}}"`` (note:
   ``"<project name>"`` is a placeholder here). It's met if the project we upload
-  is among the ones listed in the caveats.
+  is among the ones listed in the caveats. It's represented by the
+  `ProjectsRestriction`.
+
+The projects restriction that PyPI implements is limited to:
+
+- a single project per token (even if the restriction format allows multiple projects)
+- creating tokens for existing projects you own (even though it's perfectly possible
+  to create tokens for projects that don't exist yet, or for which you don't have
+  upload permission yet).
+
+.. note::
+
+    You still need to be a project maintainer or owner for your tokens to work on a
+    project. Restrictions can only reduce the scope of a token.
 
 Do we really need an abstraction layer over PyMacaroons?
 --------------------------------------------------------
@@ -88,6 +101,28 @@ Can we add new restrictions?
 As long as PyPI doesn't use ``pypitoken`` to generate tokens, it's not very useful
 to implement new restrictions. But once we get it merged, then we'll want to add plenty
 of new and smart restrictions (based on time, upload file name and hash, etc)
+
+The restrictions planned for the future are:
+
+- Version-based restriction
+- Filename-based restriction
+- Hash-sum-based restriction
+- Time-window-based restriction
+- IP-based restriction
+- One-time-use restriction (this will require Warehouse to remember a value)
+- Somehow restricting to uploads coming from a given project's CI
+- ...? (ideas welcome)
+
+Most of those were initially discussed in the `Warehouse tracker`__.
+
+.. __: https://github.com/pypa/warehouse/issues/994
+
+There would be 2 main categories of restrictions:
+
+- Restrictions you apply just before uploading a release to limit the possible
+  consequences of token steal or replay attack,
+- Restrictions you apply before handing your token over to a third party, to ensure
+  they can't mis-use it.
 
 Is this library a part of PyPI?
 -------------------------------
