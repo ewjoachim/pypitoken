@@ -1,7 +1,7 @@
 import dataclasses
 import functools
 import json
-from typing import Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import jsonschema
 import pymacaroons
@@ -9,6 +9,23 @@ import pymacaroons
 from pypitoken import exceptions
 
 PREFIX = "pypi"
+
+
+@dataclasses.dataclass
+class Context:
+    """
+    Describe the circumstances sourrounding how the bearer is attempting to use
+    the token. Will be checked against restriction to determine whether the bearer
+    can or cannot use this token for the operation.
+
+    Parameters
+    ----------
+    project :
+        Normalized name of the project the bearer is attempting to upload to
+    """
+
+    project: str
+
 
 T = TypeVar("T", bound="Restriction")
 
@@ -28,20 +45,39 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def validate_value(cls, value: Dict) -> None:
+    def load_from_value(cls: Type[T], value: Any) -> T:
         try:
             jsonschema.validate(
                 instance=value,
                 schema=cls.get_schema(),
             )
         except jsonschema.ValidationError as exc:
-            raise exceptions.ValidationError() from exc
+            raise exceptions.LoadError() from exc
+
+        return cls(**cls.extract_kwargs(value=value))  # type: ignore
 
     @classmethod
-    def load_from_value(cls: Type[T], value: Dict) -> T:
+    def extract_kwargs(cls, value: Dict) -> Dict:
+        """
+        Receive the parsed JSON value of a caveat for which the schema has been
+        validated. Returns the instantiation kwargs (``__init__`` parameters).
+        """
         raise NotImplementedError
 
-    def check(self, context) -> None:
+    def check(self, context: Context) -> None:
+        """
+        Receive the context of a check
+
+        Parameters
+        ----------
+        context :
+            Describes how the bearer is attempting to use the token.
+
+        Raises
+        ------
+        `ValidationError`
+            Restriction was checked and appeared unmet.
+        """
         raise NotImplementedError
 
     def dump_value(self) -> Dict:
@@ -67,10 +103,10 @@ class NoopRestriction(Restriction):
         }
 
     @classmethod
-    def load_from_value(cls, value: Dict) -> "NoopRestriction":
-        return cls()
+    def extract_kwargs(cls, value: Dict) -> Dict:
+        return {}
 
-    def check(self, context: Dict) -> None:
+    def check(self, context: Context) -> None:
         # Always passes
         return
 
@@ -111,20 +147,14 @@ class ProjectsRestriction(Restriction):
         }
 
     @classmethod
-    def load_from_value(cls, value: Dict) -> "ProjectsRestriction":
-        projects = value["permissions"]["projects"]
-        return cls(projects=projects)
+    def extract_kwargs(cls, value: Dict) -> Dict:
+        return {"projects": value["permissions"]["projects"]}
 
     def dump_value(self) -> Dict:
         return {"version": 1, "permissions": {"projects": self.projects}}
 
-    def check(self, context: Dict) -> None:
-        try:
-            project = context["project"]
-        except KeyError:
-            raise exceptions.MissingContextError(
-                "Missing key 'project' from validation context"
-            )
+    def check(self, context: Context) -> None:
+        project = context.project
 
         if project not in self.projects:
             raise exceptions.ValidationError(
@@ -138,16 +168,11 @@ class ProjectsRestriction(Restriction):
 RESTRICTION_CLASSES: List[Type[Restriction]] = [NoopRestriction, ProjectsRestriction]
 
 
-def json_load_caveat(caveat: str) -> Dict:
+def json_load_caveat(caveat: str) -> Any:
     try:
         value = json.loads(caveat)
     except Exception as exc:
         raise exceptions.LoadError(f"Error while loading caveat: {exc}") from exc
-
-    if not isinstance(value, dict):
-        raise exceptions.LoadError(
-            f"Caveat is a well-formed JSON string but not a dict: {value}"
-        )
 
     return value
 
@@ -171,15 +196,14 @@ def load_restriction(
     value = json_load_caveat(caveat=caveat)
     for subclass in classes:
         try:
-            subclass.validate_value(value)
-        except exceptions.ValidationError:
+            return subclass.load_from_value(value=value)
+        except exceptions.LoadError:
             continue
-        return subclass.load_from_value(value)
 
     raise exceptions.LoadError(f"Could not find matching Restriction for {value}")
 
 
-def check_caveat(caveat: str, context: Dict) -> bool:
+def check_caveat(caveat: str, context: Context) -> bool:
     """
     This function follows the pymacaroon Verifier.satisfy_general API, except
     that it takes a context parameter. It's expected to be used with `functools.partial`
@@ -207,7 +231,7 @@ def check_caveat(caveat: str, context: Dict) -> bool:
     # Actually, the pymacaroons API tells us to return False when a validation fail,
     # which keeps us from raising a more expressive error.
     # Hopefully, this will be adressed in pymacaroons in the future.
-    except exceptions.PyPITokenException:
+    except exceptions.ValidationError:
         return False
 
     return True
@@ -291,6 +315,7 @@ class Token:
             raise exceptions.LoadError("Token is missing a prefix")
         try:
             macaroon = pymacaroons.Macaroon.deserialize(raw_macaroon)
+        # https://github.com/ecordell/pymacaroons/issues/50
         except Exception as exc:
             raise exceptions.LoadError(f"Deserialization error: {exc}") from exc
         return cls(
@@ -407,7 +432,7 @@ class Token:
     def check(
         self,
         key: str,
-        project: Optional[str] = None,
+        project: str,
     ) -> None:
         """
         Raises pypitoken.ValidationError if the token is invalid.
@@ -423,14 +448,7 @@ class Token:
         key : str
             Key of the macaroon, stored in PyPI database
         project : Optional[str], optional
-            Name of the project the bearer is attempting to interact with, by default
-            None
-        filename : Optional[str], optional
-            Name of the file the bearer is attempting to upload, by default None
-        hash : Optional[str], optional
-            [description], by default None
-        timestamp : Optional[datetime.datetime], optional
-            [description], by default None
+            Normalized name of the project the bearer is attempting to upload to.
 
         Raises
         ------
@@ -442,13 +460,13 @@ class Token:
         """
         verifier = pymacaroons.Verifier()
 
-        context = {"project": project}
+        context = Context(project=project)
 
         verifier.satisfy_general(functools.partial(check_caveat, context=context))
         try:
             verifier.verify(self._macaroon, key)
+        # https://github.com/ecordell/pymacaroons/issues/51
         except Exception as exc:
-            # https://github.com/ecordell/pymacaroons/issues/51
             raise exceptions.ValidationError(
                 f"Error while validating token: {exc}"
             ) from exc
