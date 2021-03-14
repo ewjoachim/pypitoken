@@ -1,3 +1,5 @@
+import dataclasses
+
 import pymacaroons
 import pytest
 
@@ -12,8 +14,11 @@ def test__Restriction__dump():
     assert MyRestriction().dump() == '{"a": ["b"]}'
 
 
-def test__Restriction__validate_value__pass():
+def test__Restriction__load_from_value__pass():
+    @dataclasses.dataclass
     class MyRestriction(token.Restriction):
+        version: int
+
         @staticmethod
         def get_schema():
             return {
@@ -24,7 +29,11 @@ def test__Restriction__validate_value__pass():
                 "required": ["version"],
             }
 
-    assert MyRestriction().validate_value({"version": 42}) is None
+        @classmethod
+        def extract_kwargs(cls, value):
+            return {"version": value["version"]}
+
+    assert MyRestriction.load_from_value(value={"version": 42}).version == 42
 
 
 @pytest.mark.parametrize(
@@ -37,7 +46,7 @@ def test__Restriction__validate_value__pass():
         {"version": 17},
     ],
 )
-def test__Restriction__validate_value__fail(value):
+def test__Restriction__load_from_value__fail(value):
     class MyRestriction(token.Restriction):
         @staticmethod
         def get_schema():
@@ -49,17 +58,15 @@ def test__Restriction__validate_value__fail(value):
                 "required": ["version"],
             }
 
-    with pytest.raises(exceptions.ValidationError):
-        MyRestriction().validate_value(value)
+    with pytest.raises(exceptions.LoadError):
+        MyRestriction.load_from_value(value=value)
 
 
-def test__NoopRestriction__validate_value__pass():
-    assert (
-        token.NoopRestriction.validate_value(
-            value={"version": 1, "permissions": "user"}
-        )
-        is None
+def test__NoopRestriction__load_from_value__pass():
+    tok = token.NoopRestriction.load_from_value(
+        value={"version": 1, "permissions": "user"}
     )
+    assert tok == token.NoopRestriction()
 
 
 @pytest.mark.parametrize(
@@ -73,19 +80,19 @@ def test__NoopRestriction__validate_value__pass():
         {"version": 1, "permissions": "user", "additional": "key"},
     ],
 )
-def test__NoopRestriction__validate_value__fail(value):
-    with pytest.raises(exceptions.ValidationError):
-        token.NoopRestriction.validate_value(value=value)
+def test__NoopRestriction__load_from_value__fail(value):
+    with pytest.raises(exceptions.LoadError):
+        token.NoopRestriction.load_from_value(value=value)
 
 
-def test__NoopRestriction__load_from_value():
-    noop = token.NoopRestriction.load_from_value(value={})
-    assert noop == token.NoopRestriction()
+def test__NoopRestriction__extract_kwargs():
+    noop = token.NoopRestriction.extract_kwargs(value={"any": "content"})
+    assert noop == {}
 
 
 def test__NoopRestriction__check():
     noop = token.NoopRestriction()
-    assert noop.check(context={}) is None
+    assert noop.check(context=token.Context(project="foo")) is None
 
 
 def test__NoopRestriction__dump_value():
@@ -94,15 +101,24 @@ def test__NoopRestriction__dump_value():
 
 
 @pytest.mark.parametrize(
-    "value",
+    "value, restriction",
     [
-        {"version": 1, "permissions": {"projects": []}},
-        {"version": 1, "permissions": {"projects": ["a"]}},
-        {"version": 1, "permissions": {"projects": ["a", "b"]}},
+        (
+            {"version": 1, "permissions": {"projects": []}},
+            token.ProjectsRestriction(projects=[]),
+        ),
+        (
+            {"version": 1, "permissions": {"projects": ["a"]}},
+            token.ProjectsRestriction(projects=["a"]),
+        ),
+        (
+            {"version": 1, "permissions": {"projects": ["a", "b"]}},
+            token.ProjectsRestriction(projects=["a", "b"]),
+        ),
     ],
 )
-def test__ProjectsRestriction__validate_value__pass(value):
-    assert token.ProjectsRestriction.validate_value(value=value) is None
+def test__ProjectsRestriction__load_from_value__pass(value, restriction):
+    assert token.ProjectsRestriction.load_from_value(value=value) == restriction
 
 
 @pytest.mark.parametrize(
@@ -120,32 +136,26 @@ def test__ProjectsRestriction__validate_value__pass(value):
         {"version": 1, "permissions": {"projects": ["a"], "additional": "key"}},
     ],
 )
-def test__ProjectsRestriction__validate_value__fail(value):
-    with pytest.raises(exceptions.ValidationError):
-        token.ProjectsRestriction.validate_value(value=value)
+def test__ProjectsRestriction__load_from_value__fail(value):
+    with pytest.raises(exceptions.LoadError):
+        token.ProjectsRestriction.load_from_value(value=value)
 
 
-def test__ProjectsRestriction__load_from_value():
+def test__ProjectsRestriction__extract_kwargs():
     value = {"version": 1, "permissions": {"projects": ["a", "b"]}}
-    restriction = token.ProjectsRestriction.load_from_value(value=value)
-    assert restriction == token.ProjectsRestriction(projects=["a", "b"])
+    kwargs = token.ProjectsRestriction.extract_kwargs(value=value)
+    assert kwargs == {"projects": ["a", "b"]}
 
 
 def test__ProjectsRestriction__check__pass():
     restriction = token.ProjectsRestriction(projects=["a", "b"])
-    assert restriction.check(context={"project": "a"}) is None
+    assert restriction.check(context=token.Context(project="a")) is None
 
 
-def test__ProjectsRestriction__check__fail_project():
+def test__ProjectsRestriction__check__fail():
     restriction = token.ProjectsRestriction(projects=["a", "b"])
     with pytest.raises(exceptions.ValidationError):
-        restriction.check(context={"project": "c"})
-
-
-def test__ProjectsRestriction__check__fail_context():
-    restriction = token.ProjectsRestriction(projects=["a", "b"])
-    with pytest.raises(exceptions.MissingContextError):
-        restriction.check(context={})
+        restriction.check(context=token.Context(project="c"))
 
 
 def test__ProjectsRestriction__dump_value():
@@ -170,20 +180,13 @@ def test__json_load_caveat__pass():
     assert token.json_load_caveat('{"a": "b"}') == {"a": "b"}
 
 
-@pytest.mark.parametrize(
-    "caveat, error",
-    [
-        (
-            '{"a": "b"',
-            "Error while loading caveat: Expecting ',' delimiter: line 1 column 10 (char 9)",
-        ),
-        ("[1, 2, 3]", "Caveat is a well-formed JSON string but not a dict: [1, 2, 3]"),
-    ],
-)
-def test__json_load_caveat__fail(caveat, error):
+def test__json_load_caveat__fail():
     with pytest.raises(exceptions.LoadError) as exc_info:
-        token.json_load_caveat(caveat=caveat)
-    assert str(exc_info.value) == error
+        token.json_load_caveat(caveat='{"a": "b"')
+    assert (
+        str(exc_info.value) == "Error while loading caveat: "
+        "Expecting ',' delimiter: line 1 column 10 (char 9)"
+    )
 
 
 @pytest.mark.parametrize(
@@ -225,27 +228,20 @@ def test__load_restriction__fail(caveat, error):
 def test__check_caveat__pass():
     value = token.check_caveat(
         caveat='{"version": 1, "permissions": {"projects": ["a", "b"]}}',
-        context={"project": "a"},
+        context=token.Context(project="a"),
     )
     assert value is True
 
 
 def test__check_caveat__fail_load():
-    value = token.check_caveat("{", context={})
+    value = token.check_caveat("{", context=token.Context(project="a"))
     assert value is False
 
 
 def test__check_caveat__fail_check():
     value = token.check_caveat(
         '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
-        context={"project": "c"},
-    )
-    assert value is False
-
-
-def test__check_caveat__fail_context():
-    value = token.check_caveat(
-        '{"version": 1, "permissions": {"projects": ["a", "b"]}}', context={}
+        context=token.Context(project="c"),
     )
     assert value is False
 

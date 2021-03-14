@@ -32,6 +32,3 @@ Exceptions
 
 .. autoclass:: pypitoken.ValidationError
     :show-inheritance:
-
-.. autoclass:: pypitoken.MissingContextError
-    :show-inheritance:
