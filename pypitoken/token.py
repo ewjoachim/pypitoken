@@ -210,7 +210,7 @@ def load_restriction(
     raise exceptions.LoadError(f"Could not find matching Restriction for {value}")
 
 
-def check_caveat(caveat: str, context: Context) -> bool:
+def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
     """
     This function follows the pymacaroon Verifier.satisfy_general API, except
     that it takes a context parameter. It's expected to be used with `functools.partial`
@@ -228,17 +228,20 @@ def check_caveat(caveat: str, context: Context) -> bool:
     bool
         True if the caveat is met, False otherwise (should not raise).
     """
+    # The pymacaroons API tells us to return False when a validation fails,
+    # which keeps us from raising a more expressive error.
+    # To circumvent this, we store any exception in ``errors``
+
     try:
         restriction = load_restriction(caveat=caveat)
-    except exceptions.LoadError:
+    except exceptions.LoadError as exc:
+        errors.append(exc)
         return False
 
     try:
         restriction.check(context=context)
-    # Actually, the pymacaroons API tells us to return False when a validation fail,
-    # which keeps us from raising a more expressive error.
-    # Hopefully, this will be adressed in pymacaroons in the future.
-    except exceptions.ValidationError:
+    except exceptions.ValidationError as exc:
+        errors.append(exc)
         return False
 
     return True
@@ -315,8 +318,7 @@ class Token:
         ------
         `pypitoken.LoadError`
             Any error in loading the token will be raised as a LoadError.
-            The error message should be an English human-readable string appropriate
-            to display to the user. The original exception (if any) will be attached
+            The original exception (if any) will be attached
             as the exception cause (``raise from``).
         """
         try:
@@ -464,19 +466,28 @@ class Token:
         ------
         `pypitoken.ValidationError`
             Any error in validating the token will be raised as a ValidationError.
-            The error message should be an English human-readable string appropriate
-            to display to the user. The original exception (if any) will be attached
+            The original exception (if any) will be attached
             as the exception cause (``raise from``).
         """
         verifier = pymacaroons.Verifier()
 
         context = Context(project=project)
 
-        verifier.satisfy_general(functools.partial(check_caveat, context=context))
+        errors: List[Exception] = []
+
+        verifier.satisfy_general(
+            functools.partial(check_caveat, context=context, errors=errors)
+        )
         try:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
         except Exception as exc:
+            # (we know it's actually a single item, there cannot be multiple items in
+            # this list)
+            if errors:
+                raise exceptions.ValidationError(
+                    f"Error while validating token: {errors[0]}"
+                ) from errors[0]
             raise exceptions.ValidationError(
                 f"Error while validating token: {exc}"
             ) from exc
