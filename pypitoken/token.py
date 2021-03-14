@@ -63,6 +63,7 @@ class NoopRestriction(Restriction):
                 "permissions": {"type": "string", "const": "user"},
             },
             "required": ["version", "permissions"],
+            "additionalProperties": False,
         }
 
     @classmethod
@@ -102,9 +103,11 @@ class ProjectsRestriction(Restriction):
                         "projects": {"type": "array", "items": {"type": "string"}}
                     },
                     "required": ["projects"],
+                    "additionalProperties": False,
                 },
             },
             "required": ["version", "permissions"],
+            "additionalProperties": False,
         }
 
     @classmethod
@@ -347,19 +350,19 @@ class Token:
         projects: Optional[List[str]] = None,
     ) -> "Token":
         """
-        Modifies the token in-place to add restrictions to it.
-        This can be called by PyPI as well as by anyone, adding restrictions to
-        new or existing tokens.
+        Modifies the token in-place to add restrictions to it. This can be called by
+        PyPI as well as by anyone, adding restrictions to new or existing tokens.
 
-        Note that if no restriction is added, this method will still add a noop
-        restriction, to match the original implementation.
+        Note that if no parameter is passed, and the token has no other restrictions
+        already, this method will still add a noop restriction, to match the original
+        implementation.
 
         Note: a token allows the owner to delegate their rights to the bearer.
         Consequently, a token adding restrictions linked to a project that the owner
-        cannot use will not make its bearer able to upload releases to the project.
-        As stated in the name, restrictions can reduce the scope of a token, and
-        cannot broaden it. It's possible to create a token that can do nothing,
-        for example by adding two incompatible restrictions.
+        cannot use will not make its bearer able to upload releases to the project. As
+        stated in the name, restrictions can reduce the scope of a token, and cannot
+        broaden it. It's possible to create a token that can do nothing, for example by
+        adding two incompatible restrictions.
 
         Parameters
         ----------
