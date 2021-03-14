@@ -15,11 +15,14 @@ You may come accross those classes, but while introspection is ok, you
 should not have to call the methods directly. Use `Token.restrict` and
 `Token.restrictions` instead.
 
+.. autoclass:: pypitoken.token.Restriction
+
 .. autoclass:: pypitoken.NoopRestriction
-    :exclude-members: get_schema
+    :show-inheritance:
 
 .. autoclass:: pypitoken.ProjectsRestriction
-    :exclude-members: get_schema
+    :show-inheritance:
+
 
 Exceptions
 ----------

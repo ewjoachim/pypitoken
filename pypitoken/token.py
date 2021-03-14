@@ -33,6 +33,13 @@ T = TypeVar("T", bound="Restriction")
 # Making the class a dataclass is meanly meant to ease comparison using ==
 @dataclasses.dataclass
 class Restriction:
+    """
+    Base Restriction class.
+
+    While Restriction intropection is part of the public API, methods on the
+    restriction class & subclasses are not meant to be used externally.
+    """
+
     def dump(self) -> str:
         return json.dumps(self.dump_value())
 
@@ -306,8 +313,11 @@ class Token:
 
         Raises
         ------
-        pypitoken.LoadError
-            Raised if the token cannot be loaded
+        `pypitoken.LoadError`
+            Any error in loading the token will be raised as a LoadError.
+            The error message should be an English human-readable string appropriate
+            to display to the user. The original exception (if any) will be attached
+            as the exception cause (``raise from``).
         """
         try:
             prefix, raw_macaroon = raw.split("-", maxsplit=1)
@@ -358,7 +368,7 @@ class Token:
 
         Returns
         -------
-        Token
+        `Token`
             The newly minted token
         """
         macaroon = pymacaroons.Macaroon(
@@ -397,7 +407,7 @@ class Token:
 
         Returns
         -------
-        Token
+        `Token`
             The modified Token, to ease chaining calls.
         """
         caveats: List[str] = []
@@ -452,7 +462,7 @@ class Token:
 
         Raises
         ------
-        pypitoken.ValidationError
+        `pypitoken.ValidationError`
             Any error in validating the token will be raised as a ValidationError.
             The error message should be an English human-readable string appropriate
             to display to the user. The original exception (if any) will be attached
@@ -479,7 +489,7 @@ class Token:
 
         Returns
         -------
-        List[Restriction]
+        List[`Restriction`]
         """
         return [
             load_restriction(caveat=caveat.caveat_id)
