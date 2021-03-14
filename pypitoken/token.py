@@ -63,6 +63,7 @@ class NoopRestriction(Restriction):
                 "permissions": {"type": "string", "const": "user"},
             },
             "required": ["version", "permissions"],
+            "additionalProperties": False,
         }
 
     @classmethod
@@ -102,9 +103,11 @@ class ProjectsRestriction(Restriction):
                         "projects": {"type": "array", "items": {"type": "string"}}
                     },
                     "required": ["projects"],
+                    "additionalProperties": False,
                 },
             },
             "required": ["version", "permissions"],
+            "additionalProperties": False,
         }
 
     @classmethod

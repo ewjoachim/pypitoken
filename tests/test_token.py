@@ -70,6 +70,7 @@ def test__NoopRestriction__validate_value__pass():
         {"version": 1},
         {"version": 1, "permissions": {"projects": ["a"]}},
         {"version": 1, "permissions": "something else"},
+        {"version": 1, "permissions": "user", "additional": "key"},
     ],
 )
 def test__NoopRestriction__validate_value__fail(value):
@@ -115,6 +116,8 @@ def test__ProjectsRestriction__validate_value__pass(value):
         {"version": 1, "permissions": {"projects": "a"}},
         {"version": 1, "permissions": {"projects": [1]}},
         {"version": 1, "permissions": {"projects": ["a", 1]}},
+        {"version": 1, "permissions": {"projects": ["a"]}, "additional": "key"},
+        {"version": 1, "permissions": {"projects": ["a"], "additional": "key"}},
     ],
 )
 def test__ProjectsRestriction__validate_value__fail(value):
