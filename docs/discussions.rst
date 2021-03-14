@@ -135,6 +135,35 @@ to apply for this lib to be added to PyPA.
 
 .. _Macaroon recipe:
 
+Why is there a noop restriction?
+--------------------------------
+
+Good question. The author is not sure either. In the original discussions in Warehouse,
+the idea was to have 2 types of tokens: "user" tokens and "projects" tokens. But even
+without restrictions, tokens are already scoped to a specific user, so adding a "user"
+restriction actually changes nothing, thus why it's implemented in ``pypitoken`` as a
+`NoopRestriction`.
+
+Though it's not been tested yet, tokens without restrictions should work the same
+as tokens with a noop restriction (or, for what it's worth, token with multiple noop
+restrictions).
+
+Should we have multiple restrictions in a single caveat?
+--------------------------------------------------------
+
+This is a real question we may encounter when we'll have multiple types of restrictions:
+when we want to apply a restriction to multiple aspects, should we implement all of them
+in a single caveat modelling all the aspects, or should each restriction be its own
+caveat?
+
+It can be noted that "user" (noop) restrictions and "projects" restrictions are not
+compatible, so this would tend to indicate it was not planned for multiple restrictions
+to be grouped into a single caveat.
+
+Having multiple restrictions in a single json payload makes it harder to check whether
+it's valid or not (at least, while the general format of the json payloads is not
+unified). No definitive answer is given at this time.
+
 All this talking about Macaroons, I'm hungry now!
 -------------------------------------------------
 
@@ -156,9 +185,15 @@ Steps:
 4. Whip the egg whites stiff and add a few drops of bitter almond.
 5. Using a rubber spatula, fold the egg whites into the sugar & almond batter.
 6. Pour the batter into a piping bag with a ribbed nozzle.
-7. Form the macaroons on baking paper and leave it to rest for 2h at ambiant
+7. Form the macaroons on baking paper and leave them to rest for 2h at ambiant
    temperature.
 8. Preheat oven to 190°C.
 9. Lower the oven to 180°C, and put the macaroons in for 3 minutes, then 15 minutes at
    160°C.
 10. Allow to cool before yummy time.
+
+Nice logo! Where did you get it?
+--------------------------------
+
+Design is "macaroon" by Izwar Muis from the Noun Project.
+Colors are taken from Python's visual identity.
