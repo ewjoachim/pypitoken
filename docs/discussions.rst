@@ -164,6 +164,17 @@ Having multiple restrictions in a single json payload makes it harder to check w
 it's valid or not (at least, while the general format of the json payloads is not
 unified). No definitive answer is given at this time.
 
+What does "normalized name" mean?
+---------------------------------
+
+Throughout the doc, the term "normalized name" for a project is regularily used.
+This is because some characters are synonymous in a project name, so in order to match
+a project name, we need to put it to canonical form first.
+
+See `PEP 503`__ for all the details.
+
+.. __: https://www.python.org/dev/peps/pep-0503/#normalized-names
+
 All this talking about Macaroons, I'm hungry now!
 -------------------------------------------------
 
