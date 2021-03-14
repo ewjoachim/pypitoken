@@ -151,7 +151,7 @@ Now let's implement our ``add_restriction`` function in ``tutorial.py``::
 Going line by line:
 
 - ``token = Token.load(raw_token)`` loads the token in string form into an object.
-  An exception might be raised here, of the type ``pypitoken.LoadError``.
+  An exception might be raised here, of the type ``pypitoken.LoaderError``.
 - ``print(...)``: This is a debug step, that will show us the
   restrictions our token contains. When called the second time, it should contain
   our new restriction.

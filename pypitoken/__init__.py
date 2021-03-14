@@ -1,4 +1,4 @@
-from .exceptions import LoadError, PyPITokenException, ValidationError
+from .exceptions import LoaderError, PyPITokenException, ValidationError
 from .token import NoopRestriction, ProjectsRestriction, Token
 
 __all__ = [
@@ -6,6 +6,6 @@ __all__ = [
     "NoopRestriction",
     "ProjectsRestriction",
     "PyPITokenException",
-    "LoadError",
+    "LoaderError",
     "ValidationError",
 ]

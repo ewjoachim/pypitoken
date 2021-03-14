@@ -59,7 +59,7 @@ class Restriction:
                 schema=cls.get_schema(),
             )
         except jsonschema.ValidationError as exc:
-            raise exceptions.LoadError() from exc
+            raise exceptions.LoaderError() from exc
 
         return cls(**cls.extract_kwargs(value=value))  # type: ignore
 
@@ -179,7 +179,7 @@ def json_load_caveat(caveat: str) -> Any:
     try:
         value = json.loads(caveat)
     except Exception as exc:
-        raise exceptions.LoadError(f"Error while loading caveat: {exc}") from exc
+        raise exceptions.LoaderError(f"Error while loading caveat: {exc}") from exc
 
     return value
 
@@ -192,7 +192,7 @@ def load_restriction(
 
     Raises
     ------
-    pypitokens.LoadError
+    pypitokens.LoaderError
         If the format cannot be understood
 
     Returns
@@ -204,10 +204,10 @@ def load_restriction(
     for subclass in classes:
         try:
             return subclass.load_from_value(value=value)
-        except exceptions.LoadError:
+        except exceptions.LoaderError:
             continue
 
-    raise exceptions.LoadError(f"Could not find matching Restriction for {value}")
+    raise exceptions.LoaderError(f"Could not find matching Restriction for {value}")
 
 
 def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
@@ -234,7 +234,7 @@ def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool
 
     try:
         restriction = load_restriction(caveat=caveat)
-    except exceptions.LoadError as exc:
+    except exceptions.LoaderError as exc:
         errors.append(exc)
         return False
 
@@ -316,20 +316,20 @@ class Token:
 
         Raises
         ------
-        `pypitoken.LoadError`
-            Any error in loading the token will be raised as a LoadError.
+        `pypitoken.LoaderError`
+            Any error in loading the token will be raised as a LoaderError.
             The original exception (if any) will be attached
             as the exception cause (``raise from``).
         """
         try:
             prefix, raw_macaroon = raw.split("-", maxsplit=1)
         except ValueError:
-            raise exceptions.LoadError("Token is missing a prefix")
+            raise exceptions.LoaderError("Token is missing a prefix")
         try:
             macaroon = pymacaroons.Macaroon.deserialize(raw_macaroon)
         # https://github.com/ecordell/pymacaroons/issues/50
         except Exception as exc:
-            raise exceptions.LoadError(f"Deserialization error: {exc}") from exc
+            raise exceptions.LoaderError(f"Deserialization error: {exc}") from exc
         return cls(
             prefix=prefix,
             macaroon=macaroon,

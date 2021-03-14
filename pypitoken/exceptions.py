@@ -6,7 +6,7 @@ class PyPITokenException(Exception):
     """
 
 
-class LoadError(PyPITokenException):
+class LoaderError(PyPITokenException):
     """
     Exception encoutered while calling `Token.load`, due to unexpected
     format.

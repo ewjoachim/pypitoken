@@ -30,7 +30,7 @@ Exceptions
 .. autoclass:: pypitoken.PyPITokenException
     :show-inheritance:
 
-.. autoclass:: pypitoken.LoadError
+.. autoclass:: pypitoken.LoaderError
     :show-inheritance:
 
 .. autoclass:: pypitoken.ValidationError

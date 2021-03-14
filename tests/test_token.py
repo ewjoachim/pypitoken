@@ -58,7 +58,7 @@ def test__Restriction__load_from_value__fail(value):
                 "required": ["version"],
             }
 
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         MyRestriction.load_from_value(value=value)
 
 
@@ -81,7 +81,7 @@ def test__NoopRestriction__load_from_value__pass():
     ],
 )
 def test__NoopRestriction__load_from_value__fail(value):
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         token.NoopRestriction.load_from_value(value=value)
 
 
@@ -137,7 +137,7 @@ def test__ProjectsRestriction__load_from_value__pass(value, restriction):
     ],
 )
 def test__ProjectsRestriction__load_from_value__fail(value):
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         token.ProjectsRestriction.load_from_value(value=value)
 
 
@@ -181,7 +181,7 @@ def test__json_load_caveat__pass():
 
 
 def test__json_load_caveat__fail():
-    with pytest.raises(exceptions.LoadError) as exc_info:
+    with pytest.raises(exceptions.LoaderError) as exc_info:
         token.json_load_caveat(caveat='{"a": "b"')
     assert (
         str(exc_info.value) == "Error while loading caveat: "
@@ -220,7 +220,7 @@ def test__load_restriction__pass(caveat, output):
     ],
 )
 def test__load_restriction__fail(caveat, error):
-    with pytest.raises(exceptions.LoadError) as exc_info:
+    with pytest.raises(exceptions.LoaderError) as exc_info:
         token.load_restriction(caveat=caveat)
     assert str(exc_info.value) == error
 
@@ -331,7 +331,7 @@ def test__Token__load__pass():
 )
 def test__Token__load__fail_format(raw, error):
 
-    with pytest.raises(exceptions.LoadError) as exc_info:
+    with pytest.raises(exceptions.LoaderError) as exc_info:
         token.Token.load(raw=raw)
 
     assert str(exc_info.value) == error

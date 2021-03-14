@@ -108,7 +108,7 @@ Use `Token.load`, `Token.check`::
     import pypitoken
     try:
         token = pypitoken.Token.load(raw="pypi-something")
-    except pypitoken.LoadError as exc:
+    except pypitoken.LoaderError as exc:
         display_error(exc)
         return Http403()
 
@@ -127,7 +127,7 @@ Use `Token.load`, `Token.check`::
         return Http403()
 
 
-`ValidationError` and `LoadError` should always come with an English readable
+`ValidationError` and `LoaderError` should always come with an English readable
 message, suitable for being shown to the user.
 
 If you find a case where the exception is not as helpful as it should be, and you
