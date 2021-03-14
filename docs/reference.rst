@@ -20,3 +20,18 @@ should not have to call the methods directly. Use `Token.restrict` and
 
 .. autoclass:: pypitoken.ProjectsRestriction
     :exclude-members: get_schema
+
+Exceptions
+----------
+
+.. autoclass:: pypitoken.PyPITokenException
+    :show-inheritance:
+
+.. autoclass:: pypitoken.LoadError
+    :show-inheritance:
+
+.. autoclass:: pypitoken.ValidationError
+    :show-inheritance:
+
+.. autoclass:: pypitoken.MissingContextError
+    :show-inheritance:
