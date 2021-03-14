@@ -1,5 +1,11 @@
+=========
 How to...
 =========
+
+This how-to section is divided into two parts:
+
+"User" documentation: you're a PyPI user
+========================================
 
 Create a token for use in PyPI
 ------------------------------
@@ -67,3 +73,64 @@ disappointing: you can't extract a Macaroon key from the macaroon itself. Theore
 if you're a PyPI admin, you can find the key which is stored in the PyPI Database.
 Practically, PyPI admins don't go around looking at the token secrets keys. Your
 Macaroon keys are safe where they are, and it's best for everyone this way.
+
+"Integrator" documentation: you code for PyPI itself
+====================================================
+
+This part of the documentation is if you need to create and validate tokens.
+The main user will be PyPI, but we could have the same kind of
+
+Create a token
+--------------
+
+Use `Token.create`, `Token.restrict`, `Token.dump`::
+
+    import pypitoken
+    token = pypitoken.Token.create(
+        domain="pypi.org",
+        identifier=database_macaroon.identifier,
+        key=database_macaroon.secret_key,
+        prefix="pypi",
+    )
+
+    # Use either
+    token.restrict(projects=["project-normalized-name"])  # project-specific token
+    # Or
+    token.restrict()  # user-wide token
+
+    token_to_display = token.dump()
+
+Check a token
+-------------
+
+Use `Token.load`, `Token.check`::
+
+    import pypitoken
+    try:
+        token = pypitoken.Token.load(raw="pypi-something")
+    except pypitoken.LoaderError as exc:
+        display_error(exc)
+        return Http403()
+
+    try:
+        assert token.domain == "pypi.org", f"Token was generated for the wrong domain ('{token.domain}', expected 'pypi.org')
+        assert token.prefix == "pypi", f"Token has wrong prefix ('{token.prefix}', expected 'pypi')
+    except AssertionError as exc:
+        display_error(exc)
+        return Http403()
+
+    try:
+        # The project the user is currently uploading
+        token.check(project="project-normalize-name")
+    except pypitoken.ValidationError:
+        display_error(exc)
+        return Http403()
+
+
+`ValidationError` and `LoaderError` should always come with an English readable
+message, suitable for being shown to the user.
+
+If you find a case where the exception is not as helpful as it should be, and you
+believe the program has more information but it was lost during the exception bubbling
+phase, or if the information in the exception is not appropriate to be shown back to the
+user, this will be considered a ``pypitoken`` bug, feel free to open an issue.

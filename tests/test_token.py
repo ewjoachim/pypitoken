@@ -58,7 +58,7 @@ def test__Restriction__load_from_value__fail(value):
                 "required": ["version"],
             }
 
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         MyRestriction.load_from_value(value=value)
 
 
@@ -81,7 +81,7 @@ def test__NoopRestriction__load_from_value__pass():
     ],
 )
 def test__NoopRestriction__load_from_value__fail(value):
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         token.NoopRestriction.load_from_value(value=value)
 
 
@@ -137,7 +137,7 @@ def test__ProjectsRestriction__load_from_value__pass(value, restriction):
     ],
 )
 def test__ProjectsRestriction__load_from_value__fail(value):
-    with pytest.raises(exceptions.LoadError):
+    with pytest.raises(exceptions.LoaderError):
         token.ProjectsRestriction.load_from_value(value=value)
 
 
@@ -181,7 +181,7 @@ def test__json_load_caveat__pass():
 
 
 def test__json_load_caveat__fail():
-    with pytest.raises(exceptions.LoadError) as exc_info:
+    with pytest.raises(exceptions.LoaderError) as exc_info:
         token.json_load_caveat(caveat='{"a": "b"')
     assert (
         str(exc_info.value) == "Error while loading caveat: "
@@ -220,30 +220,45 @@ def test__load_restriction__pass(caveat, output):
     ],
 )
 def test__load_restriction__fail(caveat, error):
-    with pytest.raises(exceptions.LoadError) as exc_info:
+    with pytest.raises(exceptions.LoaderError) as exc_info:
         token.load_restriction(caveat=caveat)
     assert str(exc_info.value) == error
 
 
 def test__check_caveat__pass():
+    errors = []
     value = token.check_caveat(
         caveat='{"version": 1, "permissions": {"projects": ["a", "b"]}}',
         context=token.Context(project="a"),
+        errors=errors,
     )
     assert value is True
+    assert errors == []
 
 
 def test__check_caveat__fail_load():
-    value = token.check_caveat("{", context=token.Context(project="a"))
+    errors = []
+    value = token.check_caveat("{", context=token.Context(project="a"), errors=errors)
     assert value is False
+    messages = [str(e) for e in errors]
+    assert messages == [
+        "Error while loading caveat: "
+        "Expecting property name enclosed in double quotes: "
+        "line 1 column 2 (char 1)"
+    ]
 
 
 def test__check_caveat__fail_check():
+    errors = []
+
     value = token.check_caveat(
         '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
         context=token.Context(project="c"),
+        errors=errors,
     )
     assert value is False
+    messages = [str(e) for e in errors]
+    assert messages == ["This token can only be used for project(s): a, b. Received: c"]
 
 
 @pytest.fixture
@@ -300,22 +315,25 @@ def test__Token__load__pass():
     assert tok.identifier == "123foo"
 
 
-def test__Token__load__fail_prefix():
+@pytest.mark.parametrize(
+    "raw, error",
+    [
+        ("foobar", "Token is missing a prefix"),
+        (
+            "foobar-baz",
+            "Deserialization error: cannot determine data format of binary-encoded macaroon",
+        ),
+        (
+            "pypi-AgEIcHlwaS5vcmcCAWEAAAYgNh9pJUqVF-EtMCwGaZYcStFR07Rb",
+            "Deserialization error: field data extends past end of buffer",
+        ),
+    ],
+)
+def test__Token__load__fail_format(raw, error):
 
-    with pytest.raises(exceptions.LoadError) as exc_info:
-        token.Token.load("foobar")
+    with pytest.raises(exceptions.LoaderError) as exc_info:
+        token.Token.load(raw=raw)
 
-    assert str(exc_info.value) == "Token is missing a prefix"
-
-
-def test__Token__load__fail_format():
-
-    with pytest.raises(exceptions.LoadError) as exc_info:
-        token.Token.load("foobar-baz")
-
-    error = (
-        "Deserialization error: cannot determine data format of binary-encoded macaroon"
-    )
     assert str(exc_info.value) == error
 
 
@@ -375,16 +393,23 @@ def test__Token__check__fail__signature(create_token):
 
     tok = create_token(key="ohsosecret")
     tok.restrict(projects=["a", "b"])
-    with pytest.raises(exceptions.ValidationError):
+    with pytest.raises(exceptions.ValidationError) as exc_info:
         tok.check(key="notthatsecret", project="a")
+    assert (
+        str(exc_info.value) == "Error while validating token: Signatures do not match"
+    )
 
 
 def test__Token__check__fail__caveat(create_token):
 
     tok = create_token(key="ohsosecret")
     tok.restrict(projects=["a", "b"])
-    with pytest.raises(exceptions.ValidationError):
+    with pytest.raises(exceptions.ValidationError) as exc_info:
         tok.check(key="ohsosecret", project="c")
+    assert (
+        str(exc_info.value)
+        == "Error while validating token: This token can only be used for project(s): a, b. Received: c"
+    )
 
 
 def test__Token__restrictions(create_token):

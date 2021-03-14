@@ -33,6 +33,13 @@ T = TypeVar("T", bound="Restriction")
 # Making the class a dataclass is meanly meant to ease comparison using ==
 @dataclasses.dataclass
 class Restriction:
+    """
+    Base Restriction class.
+
+    While Restriction intropection is part of the public API, methods on the
+    restriction class & subclasses are not meant to be used externally.
+    """
+
     def dump(self) -> str:
         return json.dumps(self.dump_value())
 
@@ -52,7 +59,7 @@ class Restriction:
                 schema=cls.get_schema(),
             )
         except jsonschema.ValidationError as exc:
-            raise exceptions.LoadError() from exc
+            raise exceptions.LoaderError() from exc
 
         return cls(**cls.extract_kwargs(value=value))  # type: ignore
 
@@ -172,7 +179,7 @@ def json_load_caveat(caveat: str) -> Any:
     try:
         value = json.loads(caveat)
     except Exception as exc:
-        raise exceptions.LoadError(f"Error while loading caveat: {exc}") from exc
+        raise exceptions.LoaderError(f"Error while loading caveat: {exc}") from exc
 
     return value
 
@@ -185,7 +192,7 @@ def load_restriction(
 
     Raises
     ------
-    pypitokens.LoadError
+    pypitokens.LoaderError
         If the format cannot be understood
 
     Returns
@@ -197,13 +204,13 @@ def load_restriction(
     for subclass in classes:
         try:
             return subclass.load_from_value(value=value)
-        except exceptions.LoadError:
+        except exceptions.LoaderError:
             continue
 
-    raise exceptions.LoadError(f"Could not find matching Restriction for {value}")
+    raise exceptions.LoaderError(f"Could not find matching Restriction for {value}")
 
 
-def check_caveat(caveat: str, context: Context) -> bool:
+def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
     """
     This function follows the pymacaroon Verifier.satisfy_general API, except
     that it takes a context parameter. It's expected to be used with `functools.partial`
@@ -221,17 +228,20 @@ def check_caveat(caveat: str, context: Context) -> bool:
     bool
         True if the caveat is met, False otherwise (should not raise).
     """
+    # The pymacaroons API tells us to return False when a validation fails,
+    # which keeps us from raising a more expressive error.
+    # To circumvent this, we store any exception in ``errors``
+
     try:
         restriction = load_restriction(caveat=caveat)
-    except exceptions.LoadError:
+    except exceptions.LoaderError as exc:
+        errors.append(exc)
         return False
 
     try:
         restriction.check(context=context)
-    # Actually, the pymacaroons API tells us to return False when a validation fail,
-    # which keeps us from raising a more expressive error.
-    # Hopefully, this will be adressed in pymacaroons in the future.
-    except exceptions.ValidationError:
+    except exceptions.ValidationError as exc:
+        errors.append(exc)
         return False
 
     return True
@@ -306,18 +316,20 @@ class Token:
 
         Raises
         ------
-        pypitoken.LoadError
-            Raised if the token cannot be loaded
+        `pypitoken.LoaderError`
+            Any error in loading the token will be raised as a LoaderError.
+            The original exception (if any) will be attached
+            as the exception cause (``raise from``).
         """
         try:
             prefix, raw_macaroon = raw.split("-", maxsplit=1)
         except ValueError:
-            raise exceptions.LoadError("Token is missing a prefix")
+            raise exceptions.LoaderError("Token is missing a prefix")
         try:
             macaroon = pymacaroons.Macaroon.deserialize(raw_macaroon)
         # https://github.com/ecordell/pymacaroons/issues/50
         except Exception as exc:
-            raise exceptions.LoadError(f"Deserialization error: {exc}") from exc
+            raise exceptions.LoaderError(f"Deserialization error: {exc}") from exc
         return cls(
             prefix=prefix,
             macaroon=macaroon,
@@ -358,7 +370,7 @@ class Token:
 
         Returns
         -------
-        Token
+        `Token`
             The newly minted token
         """
         macaroon = pymacaroons.Macaroon(
@@ -397,7 +409,7 @@ class Token:
 
         Returns
         -------
-        Token
+        `Token`
             The modified Token, to ease chaining calls.
         """
         caveats: List[str] = []
@@ -452,21 +464,30 @@ class Token:
 
         Raises
         ------
-        pypitoken.ValidationError
+        `pypitoken.ValidationError`
             Any error in validating the token will be raised as a ValidationError.
-            The error message should be an English human-readable string appropriate
-            to display to the user. The original exception (if any) will be attached
+            The original exception (if any) will be attached
             as the exception cause (``raise from``).
         """
         verifier = pymacaroons.Verifier()
 
         context = Context(project=project)
 
-        verifier.satisfy_general(functools.partial(check_caveat, context=context))
+        errors: List[Exception] = []
+
+        verifier.satisfy_general(
+            functools.partial(check_caveat, context=context, errors=errors)
+        )
         try:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
         except Exception as exc:
+            # (we know it's actually a single item, there cannot be multiple items in
+            # this list)
+            if errors:
+                raise exceptions.ValidationError(
+                    f"Error while validating token: {errors[0]}"
+                ) from errors[0]
             raise exceptions.ValidationError(
                 f"Error while validating token: {exc}"
             ) from exc
@@ -479,7 +500,7 @@ class Token:
 
         Returns
         -------
-        List[Restriction]
+        List[`Restriction`]
         """
         return [
             load_restriction(caveat=caveat.caveat_id)
