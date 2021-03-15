@@ -62,10 +62,8 @@ def test__Restriction__load_value__fail(value):
         MyRestriction.load_value(value=value)
 
 
-def test__NoopRestriction__load_from_value__pass():
-    tok = token.NoopRestriction.load_from_value(
-        value={"version": 1, "permissions": "user"}
-    )
+def test__NoopRestriction__load_value__pass():
+    tok = token.NoopRestriction.load_value(value={"version": 1, "permissions": "user"})
     assert tok == token.NoopRestriction()
 
 
@@ -193,11 +191,11 @@ def test__json_load_caveat__fail():
     "caveat, output",
     [
         (
-            '{"version": 1, "permissions": "user"}',
+            {"version": 1, "permissions": "user"},
             token.NoopRestriction(),
         ),
         (
-            '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
+            {"version": 1, "permissions": {"projects": ["a", "b"]}},
             token.ProjectsRestriction(projects=["a", "b"]),
         ),
     ],
@@ -206,23 +204,13 @@ def test__load_restriction__pass(caveat, output):
     assert token.load_restriction(caveat=caveat) == output
 
 
-@pytest.mark.parametrize(
-    "caveat, error",
-    [
-        (
-            "{",
-            "Error while loading caveat: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
-        ),
-        (
-            '{"version": 1, "permissions": "something"}',
-            "Could not find matching Restriction for {'version': 1, 'permissions': 'something'}",
-        ),
-    ],
-)
-def test__load_restriction__fail(caveat, error):
+def test__load_restriction__fail():
     with pytest.raises(exceptions.LoaderError) as exc_info:
-        token.load_restriction(caveat=caveat)
-    assert str(exc_info.value) == error
+        token.load_restriction(caveat={"version": 1, "permissions": "something"})
+    assert (
+        str(exc_info.value)
+        == "Could not find matching Restriction for {'version': 1, 'permissions': 'something'}"
+    )
 
 
 def test__check_caveat__pass():
@@ -236,7 +224,7 @@ def test__check_caveat__pass():
     assert errors == []
 
 
-def test__check_caveat__fail_load():
+def test__check_caveat__fail_load_json():
     errors = []
     value = token.check_caveat("{", context=token.Context(project="a"), errors=errors)
     assert value is False
@@ -246,6 +234,16 @@ def test__check_caveat__fail_load():
         "Expecting property name enclosed in double quotes: "
         "line 1 column 2 (char 1)"
     ]
+
+
+def test__check_caveat__fail_load():
+    errors = []
+    value = token.check_caveat(
+        '{"version": 13}', context=token.Context(project="a"), errors=errors
+    )
+    assert value is False
+    messages = [str(e) for e in errors]
+    assert messages == ["Could not find matching Restriction for {'version': 13}"]
 
 
 def test__check_caveat__fail_check():

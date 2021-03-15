@@ -202,10 +202,10 @@ def json_load_caveat(caveat: str) -> Any:
 
 
 def load_restriction(
-    caveat: str, classes: List[Type[Restriction]] = RESTRICTION_CLASSES
+    caveat: Dict, classes: List[Type[Restriction]] = RESTRICTION_CLASSES
 ) -> "Restriction":
     """
-    Create a Restriction from a caveat restriction string.
+    Create a Restriction from a raw caveat restriction JSON object.
 
     Raises
     ------
@@ -214,17 +214,15 @@ def load_restriction(
 
     Returns
     -------
-    [type]
-        [description]
+    `Restriction`
     """
-    value = json_load_caveat(caveat=caveat)
     for subclass in classes:
         try:
             return subclass.load_value(value=caveat)
         except exceptions.LoaderError:
             continue
 
-    raise exceptions.LoaderError(f"Could not find matching Restriction for {value}")
+    raise exceptions.LoaderError(f"Could not find matching Restriction for {caveat}")
 
 
 def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
@@ -250,7 +248,8 @@ def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool
     # To circumvent this, we store any exception in ``errors``
 
     try:
-        restriction = load_restriction(caveat=caveat)
+        value = json_load_caveat(caveat=caveat)
+        restriction = load_restriction(caveat=value)
     except exceptions.LoaderError as exc:
         errors.append(exc)
         return False
@@ -518,8 +517,13 @@ class Token:
         Returns
         -------
         List[`Restriction`]
+
+        Raises
+        ------
+        `pypitoken.LoaderError`
+            When the existing restrictions cannot be parsed
         """
         return [
-            load_restriction(caveat=caveat.caveat_id)
+            load_restriction(caveat=json_load_caveat(caveat=caveat.caveat_id))
             for caveat in self._macaroon.caveats
         ]
