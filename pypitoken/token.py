@@ -36,11 +36,13 @@ class Restriction:
     """
     Base Restriction class.
 
-    While Restriction intropection is part of the public API, methods on the
-    restriction class & subclasses are not meant to be used externally.
+    Expose lower-level methods for restriction/caveat introspection.
     """
 
     def dump(self) -> str:
+        """
+        Transform a restriction into a JSON-encoded string
+        """
         return json.dumps(self.dump_value())
 
     @staticmethod
@@ -52,7 +54,19 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def load_from_value(cls: Type[T], value: Any) -> T:
+    def load_value(cls: Type[T], value: Dict) -> T:
+        """
+        Create a Restriction from the JSON value stored in the caveat
+
+        Raises
+        ------
+        exceptions.LoaderError
+            Raise when the JSON format doesn't match this class' restriction format
+
+        Returns
+        -------
+        Restriction
+        """
         try:
             jsonschema.validate(
                 instance=value,
@@ -67,7 +81,7 @@ class Restriction:
     def extract_kwargs(cls, value: Dict) -> Dict:
         """
         Receive the parsed JSON value of a caveat for which the schema has been
-        validated. Returns the instantiation kwargs (``__init__`` parameters).
+        validated. Return the instantiation kwargs (``__init__`` parameters).
         """
         raise NotImplementedError
 
@@ -88,6 +102,9 @@ class Restriction:
         raise NotImplementedError
 
     def dump_value(self) -> Dict:
+        """
+        Transform a restriction into a JSON object
+        """
         raise NotImplementedError
 
 
@@ -203,7 +220,7 @@ def load_restriction(
     value = json_load_caveat(caveat=caveat)
     for subclass in classes:
         try:
-            return subclass.load_from_value(value=value)
+            return subclass.load_value(value=caveat)
         except exceptions.LoaderError:
             continue
 

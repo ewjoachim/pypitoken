@@ -16,6 +16,7 @@ should not have to call the methods directly. Use `Token.restrict` and
 `Token.restrictions` instead.
 
 .. autoclass:: pypitoken.token.Restriction
+    :members: load_value, dump, dump_value, get_schema, extract_kwargs, check
 
 .. autoclass:: pypitoken.NoopRestriction
     :show-inheritance:
