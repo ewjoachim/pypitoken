@@ -39,14 +39,8 @@ class Restriction:
     Expose lower-level methods for restriction/caveat introspection.
     """
 
-    def dump(self) -> str:
-        """
-        Transform a restriction into a JSON-encoded string
-        """
-        return json.dumps(self.dump_value())
-
     @staticmethod
-    def get_schema() -> Dict:
+    def _get_schema() -> Dict:
         """
         Return a jsonschema Dict object used to validate the format
         of a json restriction.
@@ -54,7 +48,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def load_value(cls: Type[T], value: Dict) -> T:
+    def _load_value(cls: Type[T], value: Dict) -> T:
         """
         Create a Restriction from the JSON value stored in the caveat
 
@@ -70,15 +64,75 @@ class Restriction:
         try:
             jsonschema.validate(
                 instance=value,
-                schema=cls.get_schema(),
+                schema=cls._get_schema(),
             )
         except jsonschema.ValidationError as exc:
             raise exceptions.LoaderError() from exc
 
-        return cls(**cls.extract_kwargs(value=value))  # type: ignore
+        return cls(**cls._extract_kwargs(value=value))  # type: ignore
+
+    @staticmethod
+    def _get_subclasses() -> List[Type["Restriction"]]:
+        """
+        List all subclasses of Restriction that we want to match against
+        """
+        # We could use __subclasses__ but that could lead to all kinds of funky things,
+        # especially in a security-sensistive library.
+        # Tests will check this against Restriction subclasses though.
+        return [NoopRestriction, ProjectsRestriction]
+
+    @staticmethod
+    def _json_load_caveat(caveat: str) -> Any:
+        try:
+            value = json.loads(caveat)
+        except Exception as exc:
+            raise exceptions.LoaderError(f"Error while loading caveat: {exc}") from exc
+
+        return value
 
     @classmethod
-    def extract_kwargs(cls, value: Dict) -> Dict:
+    def load(cls, caveat: Dict) -> "Restriction":
+        """
+        Create a Restriction from a raw caveat restriction JSON object.
+
+        Raises
+        ------
+        pypitokens.LoaderError
+            If the format cannot be understood
+
+        Returns
+        -------
+        `Restriction`
+        """
+        for subclass in cls._get_subclasses():
+            try:
+                return subclass._load_value(value=caveat)
+            except exceptions.LoaderError:
+                continue
+
+        raise exceptions.LoaderError(
+            f"Could not find matching Restriction for {caveat}"
+        )
+
+    @classmethod
+    def load_json(cls, caveat: str) -> "Restriction":
+        """
+        Create a Restriction from a raw caveat restriction JSON string.
+
+        Raises
+        ------
+        pypitokens.LoaderError
+            If the format cannot be understood
+
+        Returns
+        -------
+        `Restriction`
+        """
+        caveat_obj = cls._json_load_caveat(caveat=caveat)
+        return cls.load(caveat=caveat_obj)
+
+    @classmethod
+    def _extract_kwargs(cls, value: Dict) -> Dict:
         """
         Receive the parsed JSON value of a caveat for which the schema has been
         validated. Return the instantiation kwargs (``__init__`` parameters).
@@ -101,11 +155,17 @@ class Restriction:
         """
         raise NotImplementedError
 
-    def dump_value(self) -> Dict:
+    def dump(self) -> Dict:
         """
-        Transform a restriction into a JSON object
+        Transform a restriction into a JSON-compatible dict object
         """
         raise NotImplementedError
+
+    def dump_json(self) -> str:
+        """
+        Transform a restriction into a JSON-encoded string
+        """
+        return json.dumps(self.dump())
 
 
 @dataclasses.dataclass
@@ -115,7 +175,7 @@ class NoopRestriction(Restriction):
     """
 
     @staticmethod
-    def get_schema() -> Dict:
+    def _get_schema() -> Dict:
         return {
             "type": "object",
             "properties": {
@@ -127,14 +187,14 @@ class NoopRestriction(Restriction):
         }
 
     @classmethod
-    def extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: Dict) -> Dict:
         return {}
 
     def check(self, context: Context) -> None:
         # Always passes
         return
 
-    def dump_value(self) -> Dict:
+    def dump(self) -> Dict:
         return {"version": 1, "permissions": "user"}
 
 
@@ -152,7 +212,7 @@ class ProjectsRestriction(Restriction):
     projects: List[str]
 
     @staticmethod
-    def get_schema() -> Dict:
+    def _get_schema() -> Dict:
         return {
             "type": "object",
             "properties": {
@@ -171,10 +231,10 @@ class ProjectsRestriction(Restriction):
         }
 
     @classmethod
-    def extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: Dict) -> Dict:
         return {"projects": value["permissions"]["projects"]}
 
-    def dump_value(self) -> Dict:
+    def dump(self) -> Dict:
         return {"version": 1, "permissions": {"projects": self.projects}}
 
     def check(self, context: Context) -> None:
@@ -185,82 +245,6 @@ class ProjectsRestriction(Restriction):
                 f"This token can only be used for project(s): "
                 f"{', '.join(self.projects)}. Received: {project}"
             )
-
-
-# We could use __subclasses__ but that could lead to all kinds of funky things,
-# especially in a security-sensistive library
-RESTRICTION_CLASSES: List[Type[Restriction]] = [NoopRestriction, ProjectsRestriction]
-
-
-def json_load_caveat(caveat: str) -> Any:
-    try:
-        value = json.loads(caveat)
-    except Exception as exc:
-        raise exceptions.LoaderError(f"Error while loading caveat: {exc}") from exc
-
-    return value
-
-
-def load_restriction(
-    caveat: Dict, classes: List[Type[Restriction]] = RESTRICTION_CLASSES
-) -> "Restriction":
-    """
-    Create a Restriction from a raw caveat restriction JSON object.
-
-    Raises
-    ------
-    pypitokens.LoaderError
-        If the format cannot be understood
-
-    Returns
-    -------
-    `Restriction`
-    """
-    for subclass in classes:
-        try:
-            return subclass.load_value(value=caveat)
-        except exceptions.LoaderError:
-            continue
-
-    raise exceptions.LoaderError(f"Could not find matching Restriction for {caveat}")
-
-
-def check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
-    """
-    This function follows the pymacaroon Verifier.satisfy_general API, except
-    that it takes a context parameter. It's expected to be used with `functools.partial`
-
-    Parameters
-    ----------
-    caveat : str
-        raw caveat string that will be turned into a restriction to be checked
-    context :
-        Dict describing what we're trying to use the Token for, in order to decide
-        whether the restrictions expressed by the caveat apply.
-
-    Returns
-    -------
-    bool
-        True if the caveat is met, False otherwise (should not raise).
-    """
-    # The pymacaroons API tells us to return False when a validation fails,
-    # which keeps us from raising a more expressive error.
-    # To circumvent this, we store any exception in ``errors``
-
-    try:
-        value = json_load_caveat(caveat=caveat)
-        restriction = load_restriction(caveat=value)
-    except exceptions.LoaderError as exc:
-        errors.append(exc)
-        return False
-
-    try:
-        restriction.check(context=context)
-    except exceptions.ValidationError as exc:
-        errors.append(exc)
-        return False
-
-    return True
 
 
 class Token:
@@ -430,7 +414,7 @@ class Token:
         """
         caveats: List[str] = []
         if projects is not None:
-            caveats.append(ProjectsRestriction(projects).dump())
+            caveats.append(ProjectsRestriction(projects).dump_json())
 
         # Add other restrictions here
 
@@ -438,7 +422,7 @@ class Token:
             # It's actually not really useful to add a noop restriction, but
             # it's done that way in the original implementation, and has been kept so
             # far
-            caveats = [NoopRestriction().dump()]
+            caveats = [NoopRestriction().dump_json()]
 
         for caveat in caveats:
             self._macaroon.add_first_party_caveat(caveat)
@@ -492,21 +476,58 @@ class Token:
         errors: List[Exception] = []
 
         verifier.satisfy_general(
-            functools.partial(check_caveat, context=context, errors=errors)
+            functools.partial(self._check_caveat, context=context, errors=errors)
         )
         try:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
         except Exception as exc:
-            # (we know it's actually a single item, there cannot be multiple items in
-            # this list)
             if errors:
-                raise exceptions.ValidationError(
-                    f"Error while validating token: {errors[0]}"
-                ) from errors[0]
+                # (we know it's actually a single item, there cannot be multiple items
+                # in this list)
+                (exc,) = errors
+
             raise exceptions.ValidationError(
                 f"Error while validating token: {exc}"
             ) from exc
+
+    @staticmethod
+    def _check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
+        """
+        This method follows the pymacaroon Verifier.satisfy_general API, except
+        that it takes a context parameter. It's expected to be used with
+        `functools.partial`
+
+        Parameters
+        ----------
+        caveat :
+            raw caveat string that will be turned into a restriction to be checked
+        context :
+            Dict describing what we're trying to use the Token for, in order to decide
+            whether the restrictions expressed by the caveat apply.
+        errors :
+            If any exception is raised, it will be appended to this list, so that
+            we'll be able to raise them properly later
+
+        Returns
+        -------
+        bool
+            True if the caveat is met, False otherwise (should not raise).
+        """
+
+        try:
+            restriction = Restriction.load_json(caveat=caveat)
+        except exceptions.LoaderError as exc:
+            errors.append(exc)
+            return False
+
+        try:
+            restriction.check(context=context)
+        except exceptions.ValidationError as exc:
+            errors.append(exc)
+            return False
+
+        return True
 
     @property
     def restrictions(self) -> List[Restriction]:
@@ -524,6 +545,6 @@ class Token:
             When the existing restrictions cannot be parsed
         """
         return [
-            load_restriction(caveat=json_load_caveat(caveat=caveat.caveat_id))
+            Restriction.load_json(caveat=caveat.caveat_id)
             for caveat in self._macaroon.caveats
         ]

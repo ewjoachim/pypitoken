@@ -2,7 +2,9 @@
 How to...
 =========
 
-This how-to section is divided into two parts:
+This how-to section is divided into two parts: user and integrator doc.
+User is for people who want to interact with their own tokens.
+Integrator is for people interested into interacting this library in Warehouse.
 
 "User" documentation: you're a PyPI user
 ========================================
@@ -73,6 +75,29 @@ disappointing: you can't extract a Macaroon key from the macaroon itself. Theore
 if you're a PyPI admin, you can find the key which is stored in the PyPI Database.
 Practically, PyPI admins don't go around looking at the token secrets keys. Your
 Macaroon keys are safe where they are, and it's best for everyone this way.
+
+Introspect a token's restrictions
+---------------------------------
+
+`Token.restrictions` will give you a list of restriction objects. These objects
+are dataclass instances that you can compare and introspect easily.
+
+There might also be cases where you want to interact with caveat values directly,
+without a token. In this case, you can use the methods on the `Restriction` class::
+
+    import pypitoken
+    restriction = pypitoken.Restriction.load_json(
+        '{"version": 1, "permissions": "user"}'
+    )
+    # or
+    restriction = pypitoken.Restriction.load(
+        {"version": 1, "permissions": "user"}
+    )
+    # NoopRestriction()
+
+    print(restriction.dump())  # outputs a dict
+    print(restriction.dump_json())  # outputs a json-encoded string
+
 
 "Integrator" documentation: you code for PyPI itself
 ====================================================

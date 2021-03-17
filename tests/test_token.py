@@ -6,12 +6,12 @@ import pytest
 from pypitoken import exceptions, token
 
 
-def test__Restriction__dump():
+def test__Restriction__dump_json():
     class MyRestriction(token.Restriction):
-        def dump_value(self):
+        def dump(self):
             return {"a": ["b"]}
 
-    assert MyRestriction().dump() == '{"a": ["b"]}'
+    assert MyRestriction().dump_json() == '{"a": ["b"]}'
 
 
 def test__Restriction__load_value__pass():
@@ -93,9 +93,9 @@ def test__NoopRestriction__check():
     assert noop.check(context=token.Context(project="foo")) is None
 
 
-def test__NoopRestriction__dump_value():
+def test__NoopRestriction__dump():
     noop = token.NoopRestriction()
-    assert noop.dump_value() == {"version": 1, "permissions": "user"}
+    assert noop.dump() == {"version": 1, "permissions": "user"}
 
 
 @pytest.mark.parametrize(
@@ -156,31 +156,31 @@ def test__ProjectsRestriction__check__fail():
         restriction.check(context=token.Context(project="c"))
 
 
-def test__ProjectsRestriction__dump_value():
+def test__ProjectsRestriction__dump():
     restriction = token.ProjectsRestriction(projects=["a", "b"])
-    assert restriction.dump_value() == {
+    assert restriction.dump() == {
         "version": 1,
         "permissions": {"projects": ["a", "b"]},
     }
 
 
-def test__RESTRICTION_CLASSES():
+def test__Restriction__get_subclasses():
     # This test ensures we didn't forget to add new restriction classes to
     # the set.
-    assert set(token.RESTRICTION_CLASSES) == {
+    assert set(token.Restriction._get_subclasses()) == {
         cls
         for cls in token.Restriction.__subclasses__()
         if cls.__module__ == "pypitoken.token"
     }
 
 
-def test__json_load_caveat__pass():
-    assert token.json_load_caveat('{"a": "b"}') == {"a": "b"}
+def test__Restriction__json_load_caveat__pass():
+    assert token.Restriction._json_load_caveat('{"a": "b"}') == {"a": "b"}
 
 
-def test__json_load_caveat__fail():
+def test__Restriction__json_load_caveat__fail():
     with pytest.raises(exceptions.LoaderError) as exc_info:
-        token.json_load_caveat(caveat='{"a": "b"')
+        token.Restriction._json_load_caveat(caveat='{"a": "b"')
     assert (
         str(exc_info.value) == "Error while loading caveat: "
         "Expecting ',' delimiter: line 1 column 10 (char 9)"
@@ -200,22 +200,29 @@ def test__json_load_caveat__fail():
         ),
     ],
 )
-def test__load_restriction__pass(caveat, output):
-    assert token.load_restriction(caveat=caveat) == output
+def test__Restriction__load__pass(caveat, output):
+    assert token.Restriction.load(caveat=caveat) == output
 
 
-def test__load_restriction__fail():
+def test__Restriction__load__fail():
     with pytest.raises(exceptions.LoaderError) as exc_info:
-        token.load_restriction(caveat={"version": 1, "permissions": "something"})
+        token.Restriction.load(caveat={"version": 1, "permissions": "something"})
     assert (
         str(exc_info.value)
         == "Could not find matching Restriction for {'version': 1, 'permissions': 'something'}"
     )
 
 
-def test__check_caveat__pass():
+def test__Restriction__load_json():
+    restriction = token.Restriction.load_json(
+        caveat='{"version": 1, "permissions": "user"}'
+    )
+    assert restriction == token.NoopRestriction()
+
+
+def test__Token__check_caveat__pass():
     errors = []
-    value = token.check_caveat(
+    value = token.Token._check_caveat(
         caveat='{"version": 1, "permissions": {"projects": ["a", "b"]}}',
         context=token.Context(project="a"),
         errors=errors,
@@ -226,7 +233,9 @@ def test__check_caveat__pass():
 
 def test__check_caveat__fail_load_json():
     errors = []
-    value = token.check_caveat("{", context=token.Context(project="a"), errors=errors)
+    value = token.Token._check_caveat(
+        "{", context=token.Context(project="a"), errors=errors
+    )
     assert value is False
     messages = [str(e) for e in errors]
     assert messages == [
@@ -238,7 +247,7 @@ def test__check_caveat__fail_load_json():
 
 def test__check_caveat__fail_load():
     errors = []
-    value = token.check_caveat(
+    value = token.Token._check_caveat(
         '{"version": 13}', context=token.Context(project="a"), errors=errors
     )
     assert value is False
@@ -249,7 +258,7 @@ def test__check_caveat__fail_load():
 def test__check_caveat__fail_check():
     errors = []
 
-    value = token.check_caveat(
+    value = token.Token._check_caveat(
         '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
         context=token.Context(project="c"),
         errors=errors,
