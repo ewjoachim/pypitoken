@@ -20,7 +20,7 @@ def test__Restriction__load_value__pass():
         version: int
 
         @staticmethod
-        def get_schema():
+        def _get_schema():
             return {
                 "type": "object",
                 "properties": {
@@ -30,10 +30,10 @@ def test__Restriction__load_value__pass():
             }
 
         @classmethod
-        def extract_kwargs(cls, value):
+        def _extract_kwargs(cls, value):
             return {"version": value["version"]}
 
-    assert MyRestriction.load_value(value={"version": 42}).version == 42
+    assert MyRestriction._load_value(value={"version": 42}).version == 42
 
 
 @pytest.mark.parametrize(
@@ -49,7 +49,7 @@ def test__Restriction__load_value__pass():
 def test__Restriction__load_value__fail(value):
     class MyRestriction(token.Restriction):
         @staticmethod
-        def get_schema():
+        def _get_schema():
             return {
                 "type": "object",
                 "properties": {
@@ -59,11 +59,11 @@ def test__Restriction__load_value__fail(value):
             }
 
     with pytest.raises(exceptions.LoaderError):
-        MyRestriction.load_value(value=value)
+        MyRestriction._load_value(value=value)
 
 
 def test__NoopRestriction__load_value__pass():
-    tok = token.NoopRestriction.load_value(value={"version": 1, "permissions": "user"})
+    tok = token.NoopRestriction._load_value(value={"version": 1, "permissions": "user"})
     assert tok == token.NoopRestriction()
 
 
@@ -80,11 +80,11 @@ def test__NoopRestriction__load_value__pass():
 )
 def test__NoopRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        token.NoopRestriction.load_value(value=value)
+        token.NoopRestriction._load_value(value=value)
 
 
 def test__NoopRestriction__extract_kwargs():
-    noop = token.NoopRestriction.extract_kwargs(value={"any": "content"})
+    noop = token.NoopRestriction._extract_kwargs(value={"any": "content"})
     assert noop == {}
 
 
@@ -116,7 +116,7 @@ def test__NoopRestriction__dump():
     ],
 )
 def test__ProjectsRestriction__load_value__pass(value, restriction):
-    assert token.ProjectsRestriction.load_value(value=value) == restriction
+    assert token.ProjectsRestriction._load_value(value=value) == restriction
 
 
 @pytest.mark.parametrize(
@@ -136,12 +136,12 @@ def test__ProjectsRestriction__load_value__pass(value, restriction):
 )
 def test__ProjectsRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        token.ProjectsRestriction.load_value(value=value)
+        token.ProjectsRestriction._load_value(value=value)
 
 
 def test__ProjectsRestriction__extract_kwargs():
     value = {"version": 1, "permissions": {"projects": ["a", "b"]}}
-    kwargs = token.ProjectsRestriction.extract_kwargs(value=value)
+    kwargs = token.ProjectsRestriction._extract_kwargs(value=value)
     assert kwargs == {"projects": ["a", "b"]}
 
 
