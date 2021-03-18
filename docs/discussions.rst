@@ -179,6 +179,7 @@ What would be good practice regarding token restrictions and traceability
 -------------------------------------------------------------------------
 
 PyPI offers quite a bit of interesting features regarding token traceability & audit:
+
 - You can list your existing tokens, including a description of your choice
 - You can revoke them
 - You can see the restrictions applied at generation time by PyPI
