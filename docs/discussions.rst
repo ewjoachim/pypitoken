@@ -175,6 +175,34 @@ See `PEP 503`__ for all the details.
 
 .. __: https://www.python.org/dev/peps/pep-0503/#normalized-names
 
+What would be good practice regarding token restrictions and traceability
+-------------------------------------------------------------------------
+
+PyPI offers quite a bit of interesting features regarding token traceability & audit:
+- You can list your existing tokens, including a description of your choice
+- You can revoke them
+- You can see the restrictions applied at generation time by PyPI
+- Other project admins can see if you generated tokens for projects you share with them
+
+It's generally considered a good idea to use each token for one dedicated usage, so that
+if you need to revoke a token, you don't break anything else.
+
+Adding restrictions yourself on existing tokens have consequences on those elements:
+
+- If two tokens are created by adding restrictions to a single "parent" token, revoking
+  the parent token will revoke all the children at the same time. Given it's still a
+  good idea to use a token for one usage only, when you generate a token with a
+  restriction, if you plan to store the child token, then you should consider throwing
+  away immediately the original token. Of course, this is not always applicable, some
+  use-cases may require to store both but you may need to track the diffusion of your
+  tokens yourself.
+- In PyPI, restrictions you added yourself will not appear in the token list, so
+  it's a good idea to be overly explicit in the token description. Note that the
+  description field cannot be modified after generation.
+
+This way, your PyPI account page will still be a good place to track all of your
+existing tokens, and you will be able to follow each of them easily.
+
 All this talking about Macaroons, I'm hungry now!
 -------------------------------------------------
 
