@@ -1,7 +1,7 @@
 import dataclasses
 import functools
 import json
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import jsonschema
 import pymacaroons
@@ -340,7 +340,7 @@ class Token:
         cls,
         domain: str,
         identifier: str,
-        key: str,
+        key: Union[str, bytes],
         prefix: str = PREFIX,
         version: int = pymacaroons.MACAROON_V2,
     ) -> "Token":
@@ -443,7 +443,7 @@ class Token:
 
     def check(
         self,
-        key: str,
+        key: Union[str, bytes],
         project: str,
     ) -> None:
         """

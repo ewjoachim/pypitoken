@@ -344,12 +344,13 @@ def test__Token__load__fail_format(raw, error):
     assert str(exc_info.value) == error
 
 
-def test__Token__create():
+@pytest.mark.parametrize("key", ["ohsosecret", b"ohsosecret"])
+def test__Token__create(key):
 
     tok = token.Token.create(
         domain="example.com",
         identifier="123foo",
-        key="ohsosecret",
+        key=key,
         prefix="pre",
     )
     raw = "pre-AgELZXhhbXBsZS5jb20CBjEyM2ZvbwAABiCK4TytWvy17_Up7TvhdVDhFx8cjU_ne_6wtOqxPUZmxw"
@@ -389,11 +390,12 @@ def test__Token__restrict__multiple(create_token):
     ]
 
 
-def test__Token__check__pass(create_token):
+@pytest.mark.parametrize("key", ["ohsosecret", b"ohsosecret"])
+def test__Token__check__pass(create_token, key):
 
-    tok = create_token(key="ohsosecret")
+    tok = create_token(key=key)
     tok.restrict(projects=["a", "b"])
-    tok.check(key="ohsosecret", project="a")
+    tok.check(key=key, project="a")
 
 
 def test__Token__check__fail__signature(create_token):
