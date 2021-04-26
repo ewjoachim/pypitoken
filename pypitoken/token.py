@@ -30,7 +30,7 @@ class Context:
 T = TypeVar("T", bound="Restriction")
 
 
-# Making the class a dataclass is meanly meant to ease comparison using ==
+# Making the class a dataclass is mainly meant to ease comparison using ==
 @dataclasses.dataclass
 class Restriction:
     """
