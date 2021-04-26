@@ -13,6 +13,27 @@ jobs:
     name: Publish package to PyPI
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python_version: ${{ matrix.python_version }}
+
+      - name: Pip, Pre-commit & Poetry caches
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/
+          key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dev dependencies
+        run: poetry install
+
       - name: Wait for tests to succeed
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-ci
@@ -24,18 +45,7 @@ jobs:
         if: steps.wait-for-ci.outputs.conclusion != 'success'
         run: exit 1
 
-      - uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.x
-
-      - name: Install Poetry
-        run: pip install poetry
-
-      - name: Install Dev dependencies
-        run: poetry install
-
       - name: Publish on PyPI
-        run: scripts/publish "${{ secrets.PYPI_TOKEN }}"
+        run: scripts/publish
+        env:
+          PYPI_TOKEN: "${{ secrets.PYPI_TOKEN }}"
