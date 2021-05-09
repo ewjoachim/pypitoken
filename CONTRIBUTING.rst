@@ -3,57 +3,68 @@ Contributing
 
 You're welcome to come and bake delicious macaroons with us :)
 
-This project uses Poetry_, pre-commit_ and tox_. We recommand installing those with
+This project uses Poetry_ and pre-commit_. We recommand installing those with
 pipx_.
 
 .. _Poetry: https://python-poetry.org/
 .. _pre-commit: https://pre-commit.com
 .. _pipx: https://pipxproject.github.io/pipx/installation/
-.. _tox: https://tox.readthedocs.io/en/latest/
 
 There are multiple ways of interacting with the project.
 
-I just want to run the CI checks locally
-----------------------------------------
+I just want the simple straightfoward thing
+-------------------------------------------
+
+Have tox_ installed, run it.
+
+.. _tox: https://tox.readthedocs.io/en/latest/
 
 .. code-block:: console
 
     $ tox
 
-Of course, you can launch a single environment (see ``tox.ini`` for details on each
-environment). For a full run, you'll need to have all the Python versions that this lib
-supports, installed locally (but it's ok to do a partial run, that's why the CI is for).
+Tox is not the best way to interact with the project, but it's certainly
+the easiest. Because the project uses ``poetry``, which handles its own virtual
+environments, as well as ``pre-commit``, which does too, using tox on top creates
+unnecessary levels, but it's a one-liner that works.
 
-I want to run the code quality tools
-------------------------------------
+The CI doesn't use tox, though, so while it's expected that if tox runs locally,
+the CI will be happy too, there's no formal guarantee of that.
 
-Assuming you install ``pre-commit``, use ``pre-commit run``.
-But assuming you installed ``pre-commit``, run ``pre-commit install`` and you'll have
-the linters run on commit, which is more practical.
+I want to prepare my development environment
+--------------------------------------------
+
+The ``bootstrap`` script will install ``poetry`` and ``pre-commit`` through ``pipx``
+for you. If ``pipx`` is not installed, it will be added too. It will also install
+commit hooks.
+
+.. code-block:: console
+
+    $ scripts/bootstrap
+
+I want to run the CI checks locally
+-----------------------------------
+
+.. code-block:: console
+
+    $ scripts/tests
+    $ scripts/lint
+    $ scripts/docs
+
+Please inspect those scripts, you'll see that they are very short. You're free to
+use the command they describe directly, there's nothing wrong in that.
 
 I want a venv to play locally
 -----------------------------
 
-.. code-block:: console
-
-    $ poetry install
-
-Look at ``poetry env use python3.X`` if you want to work on a specific Python version.
-
-I want to run the the tests
----------------------------
-
-The easiest way to run the tests on a single python version is:
-
-.. code-block:: console
-
-    $ poetry run pytest
+Use poetry. Look at ``poetry env use python3.X`` if you want to work on a specific
+Python version.
 
 I want a quicker feedback loop
 ------------------------------
 
-Create a virtualenv with a version of python of your choice (or skip this step if you're
-ok working with a virtualenv built with your default ``python3``)
+Running ``poetry run`` takes a good second or more. If you want to speed things up,
+create a shell in your virtual environment:
 
 .. code-block:: console
 
@@ -98,8 +109,7 @@ but we're always doing our best so that you can remove the top layers and work
 the way you prefer. For example: you can use ``pytest`` or ``black`` as-is, without
 all the tools. It's even recommanded to remove layers when things become complicated.
 
-The base commands are in the ``scripts/`` folder. Those scripts are the lowest-level
-actions, they consider you have already figured out your virtualenv, dependencies etc.
+The commands are in the ``scripts/`` folder.
 
 Core contributor additional documentation
 -----------------------------------------
@@ -109,6 +119,7 @@ Release a new version
 
 There should be an active Release Draft with the changelog in GitHub releases. Make
 relevant edits to the changelog. Click on Release, that's it, the rest is automated.
+The version number in the tag will be released version.
 
 When creating the release, GitHub will save the release info and create a tag with the
 provided version. The new tag will be seen by GitHub Actions, which will then create a
