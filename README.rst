@@ -21,8 +21,8 @@ PyPIToken: Manipulate PyPI API tokens
     :target: http://pypitoken.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation
 
-.. image:: https://img.shields.io/codecov/c/github/ewjoachim/pypitoken?logo=codecov&logoColor=white
-    :target: https://codecov.io/gh/ewjoachim/pypitoken
+.. image:: https://img.shields.io/endpoint?logo=codecov&logoColor=white&url=https://raw.githubusercontent.com/wiki/ewjoachim/pypitoken/coverage-comment-badge.json
+    :target: https://github.com/marketplace/actions/coverage-comment
     :alt: Coverage
 
 .. image:: https://img.shields.io/github/license/ewjoachim/pypitoken?logo=open-source-initiative&logoColor=white
