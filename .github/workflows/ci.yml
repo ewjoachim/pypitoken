@@ -57,7 +57,7 @@ jobs:
         uses: ewjoachim/coverage-comment-action@v1.0.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
   report-status:
     name: success
     runs-on: ubuntu-latest
