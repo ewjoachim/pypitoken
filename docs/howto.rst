@@ -103,7 +103,12 @@ without a token. In this case, you can use the methods on the `Restriction` clas
 ====================================================
 
 This part of the documentation is if you need to create and validate tokens.
-The main user will be PyPI, but we could have the same kind of
+The main user will be PyPI, but we could have the same kind of use-case
+elsewhere.
+
+Of course, just creating a macaroon with this library is not enough to have
+it be valid on PyPI: valid macaroons need to exist in the database and this
+library only handles the computation part, not the stroring part.
 
 Create a token
 --------------
