@@ -489,7 +489,7 @@ test = ["pytest", "pytest-mock", "pytest-cov", "requests-mock"]
 
 [[package]]
 name = "sphinx-material"
-version = "0.0.32"
+version = "0.0.35"
 description = "Material sphinx theme"
 category = "dev"
 optional = false
@@ -636,7 +636,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "1ad8bf93f9d635ad34c92ac32f9a3f1dc939c585dde6be346858a2eeeadf69cc"
+content-hash = "1742133cf9a63ff9558ff546e24c81645f2fc172ff476ff3866712c49f8a0cc5"
 
 [metadata.files]
 alabaster = [
@@ -1017,8 +1017,8 @@ sphinx-github-changelog = [
     {file = "sphinx-github-changelog-1.0.2.tar.gz", hash = "sha256:8af05b7aaeb7b6ffa81ceea7ffde34e0ab39d032879c57bbefb08c0c6bb12872"},
 ]
 sphinx-material = [
-    {file = "sphinx_material-0.0.32-py3-none-any.whl", hash = "sha256:dadc6669c37950b222b5dd8f621191b5a49bd567f9c0eecd8d92ea5ca4210162"},
-    {file = "sphinx_material-0.0.32.tar.gz", hash = "sha256:ec02825a1bbe8b662fe624c11b87f1cd8d40875439b5b18c38649cf3366201fa"},
+    {file = "sphinx_material-0.0.35-py3-none-any.whl", hash = "sha256:a62a0a48d4c32edc260f9bdbca658e7d149beb10e1d338848b0076bb13be0775"},
+    {file = "sphinx_material-0.0.35.tar.gz", hash = "sha256:27f0f1084aa0201b43879aef24a0521b78dc8df4942b003a4e7d79ab11515852"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
