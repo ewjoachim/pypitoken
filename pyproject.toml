@@ -24,7 +24,7 @@ dataclasses = { version = "*", python = "~3.6" }
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
 pytest-cov = "^3.0.0"
-Sphinx = "^4.3.2"
+Sphinx = "<4"
 sphinx-material = "^0.0.35"
 sphinx-github-changelog = "^1.0.2"
 sphinx-autodoc-typehints = "^1.11.1"
