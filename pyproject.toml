@@ -22,7 +22,7 @@ dataclasses = { version = "*", python = "~3.6" }
 
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2"
+pytest = "^7.0"
 pytest-cov = "^3.0.0"
 Sphinx = "<4"
 sphinx-material = "^0.0.35"
