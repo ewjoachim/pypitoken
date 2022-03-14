@@ -129,7 +129,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "dunamai"
-version = "1.9.0"
+version = "1.10.0"
 description = "Dynamic version generation"
 category = "dev"
 optional = false
@@ -364,7 +364,7 @@ testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtuale
 
 [[package]]
 name = "python-slugify"
-version = "6.0.1"
+version = "6.1.1"
 description = "A Python slugify application that also handles Unicode"
 category = "dev"
 optional = false
@@ -643,7 +643,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "94402729bd326a6b20f7394e02cd0758589defec12562915383167f4b58d6539"
+content-hash = "0c2208e783f769be168ba5b4889c3a89c76a5043ce26c19530d3f03685a8af2d"
 
 [metadata.files]
 alabaster = [
@@ -793,8 +793,8 @@ docutils = [
     {file = "docutils-0.16.tar.gz", hash = "sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc"},
 ]
 dunamai = [
-    {file = "dunamai-1.9.0-py3-none-any.whl", hash = "sha256:89213a9c1176313cdfda7091a15c6d94be8c17b25e57a8c1e2ecf10d902b25d2"},
-    {file = "dunamai-1.9.0.tar.gz", hash = "sha256:284dc9acbd3d6b749440332e46164f64b207c56eaf4af412d856cf9f08978932"},
+    {file = "dunamai-1.10.0-py3-none-any.whl", hash = "sha256:74d09e3e903fd7a1218120ede557bcf30fd274fd80a3f1ad71921bd943944500"},
+    {file = "dunamai-1.10.0.tar.gz", hash = "sha256:8f880666168bf7be6d795e39a6c80451caf7ec430f0f0c2d920e5d9bbb439b15"},
 ]
 idna = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},
@@ -996,8 +996,8 @@ pytest-cov = [
     {file = "pytest_cov-3.0.0-py3-none-any.whl", hash = "sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6"},
 ]
 python-slugify = [
-    {file = "python-slugify-6.0.1.tar.gz", hash = "sha256:ba72aa9d9f0514c0c3dd4430442f698ccc27a24d19630473663a71e3ec606bc1"},
-    {file = "python_slugify-6.0.1-py2.py3-none-any.whl", hash = "sha256:89eec682c5180ba64811c9906a28184bbcc0a35792ba1bda3b5c2ab0cb2d0f67"},
+    {file = "python-slugify-6.1.1.tar.gz", hash = "sha256:00003397f4e31414e922ce567b3a4da28cf1436a53d332c9aeeb51c7d8c469fd"},
+    {file = "python_slugify-6.1.1-py2.py3-none-any.whl", hash = "sha256:8c0016b2d74503eb64761821612d58fcfc729493634b1eb0575d8f5b4aa1fbcf"},
 ]
 pytz = [
     {file = "pytz-2021.1-py2.py3-none-any.whl", hash = "sha256:eb10ce3e7736052ed3623d49975ce333bcd712c7bb19a58b9e2089d4057d0798"},
