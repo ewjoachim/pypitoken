@@ -1,4 +1,6 @@
 import dataclasses
+import datetime
+import inspect
 
 import pymacaroons
 import pytest
@@ -98,6 +100,14 @@ def test__NoopRestriction__dump():
     assert noop.dump() == {"version": 1, "permissions": "user"}
 
 
+def test__NoopRestriction__from_parameters__empty():
+    assert token.NoopRestriction.from_parameters() == token.NoopRestriction()
+
+
+def test__NoopRestriction__from_parameters__not_empty():
+    assert token.NoopRestriction.from_parameters(a=1) is None
+
+
 @pytest.mark.parametrize(
     "value, restriction",
     [
@@ -164,6 +174,125 @@ def test__ProjectsRestriction__dump():
     }
 
 
+def test__ProjectsRestriction__from_parameters__empty():
+    assert token.ProjectsRestriction.from_parameters() is None
+
+
+def test__ProjectsRestriction__from_parameters__not_empty():
+    assert token.ProjectsRestriction.from_parameters(
+        projects=["a", "b"]
+    ) == token.ProjectsRestriction(projects=["a", "b"])
+
+
+def test__DateRestriction__load_value__pass():
+    assert token.DateRestriction._load_value(
+        value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
+    ) == token.DateRestriction(not_before=1_234_567_890, not_after=1_234_567_900)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {},
+        {"nbf": "2000-01-01 00:00:00", "exp": "2100-01-01 00:00:00"},
+        {"nbf": "1_234_567_890", "exp": "1_234_567_900"},
+        {"nbf": 1_234_567_890},
+        {"exp": 1_234_567_890},
+    ],
+)
+def test__DateRestriction__load_value__fail(value):
+    with pytest.raises(exceptions.LoaderError):
+        token.DateRestriction._load_value(value=value)
+
+
+def test__DateRestriction__extract_kwargs():
+    value = {"nbf": 1_234_567_890, "exp": 1_234_567_900}
+    kwargs = token.DateRestriction._extract_kwargs(value=value)
+    assert kwargs == {"not_before": 1_234_567_890, "not_after": 1_234_567_900}
+
+
+def test__DateRestriction__check__pass():
+    restriction = token.DateRestriction._load_value(
+        value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
+    )
+    assert (
+        restriction.check(context=token.Context(project="a", now=1_234_567_895)) is None
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1_234_567_000,
+        1_234_568_000,
+    ],
+)
+def test__DateRestriction__check__fail(value):
+    restriction = token.DateRestriction._load_value(
+        value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
+    )
+    with pytest.raises(exceptions.ValidationError):
+        restriction.check(context=token.Context(project="a", now=value))
+
+
+def test__DateRestriction__dump():
+    restriction = token.DateRestriction._load_value(
+        value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
+    )
+    assert restriction.dump() == {
+        "nbf": 1_234_567_890,
+        "exp": 1_234_567_900,
+    }
+
+
+def test__DateRestriction__from_parameters__empty():
+    assert token.DateRestriction.from_parameters() is None
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"not_before": 1_234_567_890},
+        {"not_after": 1_234_567_900},
+        {
+            "not_before": datetime.datetime(2000, 1, 1),
+            "not_after": datetime.datetime(2100, 1, 1),
+        },
+    ],
+)
+def test__DateRestriction__from_parameters__fail(kwargs):
+    with pytest.raises(exceptions.InvalidRestriction):
+        assert token.DateRestriction.from_parameters(**kwargs) is None
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        (
+            {"not_before": 1_234_567_890, "not_after": 1_234_567_900},
+            token.DateRestriction._load_value(
+                value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
+            ),
+        ),
+        (
+            {
+                "not_before": datetime.datetime(
+                    2000, 1, 1, tzinfo=datetime.timezone.utc
+                ),
+                "not_after": datetime.datetime(
+                    2100, 1, 1, tzinfo=datetime.timezone.utc
+                ),
+            },
+            token.DateRestriction._load_value(
+                value={"nbf": 946_684_800, "exp": 4_102_444_800}
+            ),
+        ),
+    ],
+)
+def test__DateRestriction__from_parameters__ok(kwargs, expected):
+    assert token.DateRestriction.from_parameters(**kwargs) == expected
+
+
 def test__Restriction__get_subclasses():
     # This test ensures we didn't forget to add new restriction classes to
     # the set.
@@ -218,6 +347,18 @@ def test__Restriction__load_json():
         caveat='{"version": 1, "permissions": "user"}'
     )
     assert restriction == token.NoopRestriction()
+
+
+def test__Restriction__restrictions_from_parameters():
+    restrictions = list(
+        token.Restriction.restrictions_from_parameters(
+            projects=["a", "b"], not_before=1, not_after=5
+        )
+    )
+    assert restrictions == [
+        token.ProjectsRestriction(projects=["a", "b"]),
+        token.DateRestriction(not_before=1, not_after=5),
+    ]
 
 
 def test__Token__check_caveat__pass():
@@ -395,7 +536,14 @@ def test__Token__check__pass(create_token, key):
 
     tok = create_token(key=key)
     tok.restrict(projects=["a", "b"])
-    tok.check(key=key, project="a")
+    tok.check(key=key, project="a", now=1_234_567_890)
+
+
+def test__Token__check__pass__optional_now(create_token):
+
+    tok = create_token(key="ohsosecret")
+    tok.restrict(not_before=1_000_000_000, not_after=3_000_000_000)
+    tok.check(key="ohsosecret", project="a")
 
 
 def test__Token__check__fail__signature(create_token):
@@ -432,3 +580,9 @@ def test__Token__restrictions(create_token):
         token.ProjectsRestriction(projects=["a", "b"]),
         token.ProjectsRestriction(projects=["a", "d"]),
     ]
+
+
+def test_Token__restrict__signature():
+    assert (
+        "projects" in inspect.Signature.from_callable(token.Token.restrict).parameters
+    )

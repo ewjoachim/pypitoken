@@ -24,6 +24,9 @@ should not have to call the methods directly. Use `Token.restrict` and
 .. autoclass:: pypitoken.ProjectsRestriction
     :show-inheritance:
 
+.. autoclass:: pypitoken.DateRestriction
+    :show-inheritance:
+
 
 Exceptions
 ----------
@@ -35,4 +38,7 @@ Exceptions
     :show-inheritance:
 
 .. autoclass:: pypitoken.ValidationError
+    :show-inheritance:
+
+.. autoclass:: pypitoken.InvalidRestriction
     :show-inheritance:

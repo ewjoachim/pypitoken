@@ -35,8 +35,7 @@ The specification doesn't say what the caveat strings should be, but the idea is
 each caveat is adding a restriction to the original macaroon, so that when the bearer
 has to send the macaroon, they only delegate the smallest fraction of their power.
 
-It's up to the Macaroon original minter to decide how to understand the caveats,
-but when they receive a macaroon for
+It's up to the Macaroon original minter to decide how to understand the caveats.
 
 .. _HMAC: https://en.wikipedia.org/wiki/HMAC
 
@@ -65,7 +64,7 @@ then from the database, the key and user are extracted. The macaroon is checked 
 the key and caveats are checked against the upload information. If the macaroon is
 valid, then PyPI checks if the user has upload rights on the package, and then proceeds.
 
-The caveats are json-encoded strings, and as of March 2021, they come in 2 flavors:
+The caveats are json-encoded strings, and as of May 2022, they come in 3 flavors:
 
 - ``"{"version": 1, "permissions": "user"}"`` (note: it's the string ``"user"`` here,
   not a placeholder for the username), which is always met. It's represented in this
@@ -74,6 +73,10 @@ The caveats are json-encoded strings, and as of March 2021, they come in 2 flavo
   ``"<project name>"`` is a placeholder here). It's met if the project we upload
   is among the ones listed in the caveats. It's represented by the
   `ProjectsRestriction`.
+- ``"{"nbf": <timestamp>, "exp": <timestamp>}"``. It's met if we try uploading
+  the project between ``nbf`` (included) and ``exp`` (excluded). It's
+  represented by the
+  `DateRestriction`.
 
 The projects restriction that PyPI implements is limited to:
 
@@ -107,7 +110,6 @@ The restrictions planned for the future are:
 - Version-based restriction
 - Filename-based restriction
 - Hash-sum-based restriction
-- Time-window-based restriction
 - IP-based restriction
 - One-time-use restriction (this will require Warehouse to remember a value)
 - Somehow restricting to uploads coming from a given project's CI

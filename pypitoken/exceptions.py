@@ -6,6 +6,13 @@ class PyPITokenException(Exception):
     """
 
 
+class InvalidRestriction(PyPITokenException, ValueError):
+    """
+    Exception encoutered while calling `Token.restrict`, due to unexpected
+    parameters.
+    """
+
+
 class LoaderError(PyPITokenException):
     """
     Exception encoutered while calling `Token.load`, due to unexpected

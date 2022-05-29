@@ -108,7 +108,7 @@ elsewhere.
 
 Of course, just creating a macaroon with this library is not enough to have
 it be valid on PyPI: valid macaroons need to exist in the database and this
-library only handles the computation part, not the stroring part.
+library only handles the computation part, not the storing part.
 
 Create a token
 --------------
@@ -123,10 +123,12 @@ Use `Token.create`, `Token.restrict`, `Token.dump`::
         prefix="pypi",
     )
 
-    # Use either
-    token.restrict(projects=["project-normalized-name"])  # project-specific token
-    # Or
+    # Use
     token.restrict()  # user-wide token
+    # Or
+    token.restrict(projects=["project-normalized-name"])  # project-specific token
+    # You can also restrict the token in time:
+    token.restrict(not_before=timestamp_or_tz_aware_dt, not_after=timestamp_or_tz_aware_dt)
 
     token_to_display = token.dump()
 
@@ -151,7 +153,7 @@ Use `Token.load`, `Token.check`::
 
     try:
         # The project the user is currently uploading
-        token.check(project="project-normalize-name")
+        token.check(project="project-normalize-name", now=int(time.time()))
     except pypitoken.ValidationError:
         display_error(exc)
         return Http403()
@@ -164,3 +166,6 @@ If you find a case where the exception is not as helpful as it should be, and yo
 believe the program has more information but it was lost during the exception bubbling
 phase, or if the information in the exception is not appropriate to be shown back to the
 user, this will be considered a ``pypitoken`` bug, feel free to open an issue.
+
+You may omit the ``now`` parameter in the `Token.check` call, it will default
+to the current integer timestamp. That said, it's ok to be explicit.
