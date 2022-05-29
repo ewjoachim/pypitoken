@@ -34,7 +34,7 @@ PyPIToken: Manipulate PyPI API tokens
     :alt: Contributor Covenant
 
 
-PyPIToken is an open-source Python 3.6+ library for generating and manipulating
+PyPIToken is an open-source Python 3.7+ library for generating and manipulating
 PyPI tokens.
 
 PyPI tokens are very powerful, as that they are based on Macaroons_. They allow

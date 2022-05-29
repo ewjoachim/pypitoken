@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import dataclasses
 import datetime
 import functools
 import json
 import time
-from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar, Union
+from typing import Any, Iterable, TypeVar
 
 import jsonschema
 import pymacaroons
@@ -43,7 +45,7 @@ class Restriction:
     """
 
     @staticmethod
-    def _get_schema() -> Dict:
+    def _get_schema() -> dict:
         """
         Return a jsonschema Dict object used to validate the format
         of a json restriction.
@@ -51,7 +53,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def _load_value(cls: Type[T], value: Dict) -> T:
+    def _load_value(cls: type[T], value: dict) -> T:
         """
         Create a Restriction from the JSON value stored in the caveat
 
@@ -75,7 +77,7 @@ class Restriction:
         return cls(**cls._extract_kwargs(value=value))  # type: ignore
 
     @staticmethod
-    def _get_subclasses() -> List[Type["Restriction"]]:
+    def _get_subclasses() -> list[type[Restriction]]:
         """
         List all subclasses of Restriction that we want to match against
         """
@@ -94,7 +96,7 @@ class Restriction:
         return value
 
     @classmethod
-    def load(cls, caveat: Dict) -> "Restriction":
+    def load(cls, caveat: dict) -> Restriction:
         """
         Create a Restriction from a raw caveat restriction JSON object.
 
@@ -118,7 +120,7 @@ class Restriction:
         )
 
     @classmethod
-    def load_json(cls, caveat: str) -> "Restriction":
+    def load_json(cls, caveat: str) -> Restriction:
         """
         Create a Restriction from a raw caveat restriction JSON string.
 
@@ -135,7 +137,7 @@ class Restriction:
         return cls.load(caveat=caveat_obj)
 
     @classmethod
-    def _extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: dict) -> dict:
         """
         Receive the parsed JSON value of a caveat for which the schema has been
         validated. Return the instantiation kwargs (``__init__`` parameters).
@@ -143,7 +145,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def from_parameters(cls: Type[T], **kwargs) -> Optional[T]:
+    def from_parameters(cls: type[T], **kwargs) -> T | None:
         """
         Contructs an instance from the parameters passed to `Token.restrict`
         """
@@ -156,7 +158,7 @@ class Restriction:
         )
 
     @classmethod
-    def restrictions_from_parameters(cls, **kwargs) -> Iterable["Restriction"]:
+    def restrictions_from_parameters(cls, **kwargs) -> Iterable[Restriction]:
         """
         Contructs an iterable of Restriction subclass instances from the parameters
         passed to `Token.restrict`
@@ -182,7 +184,7 @@ class Restriction:
         """
         raise NotImplementedError
 
-    def dump(self) -> Dict:
+    def dump(self) -> dict:
         """
         Transform a restriction into a JSON-compatible dict object
         """
@@ -202,7 +204,7 @@ class NoopRestriction(Restriction):
     """
 
     @staticmethod
-    def _get_schema() -> Dict:
+    def _get_schema() -> dict:
         return {
             "type": "object",
             "properties": {
@@ -214,18 +216,18 @@ class NoopRestriction(Restriction):
         }
 
     @classmethod
-    def _extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: dict) -> dict:
         return {}
 
     def check(self, context: Context) -> None:
         # Always passes
         return
 
-    def dump(self) -> Dict:
+    def dump(self) -> dict:
         return {"version": 1, "permissions": "user"}
 
     @classmethod
-    def from_parameters(cls, **kwargs) -> Optional["NoopRestriction"]:
+    def from_parameters(cls, **kwargs) -> NoopRestriction | None:
         if not kwargs:
             return cls()
         return None
@@ -242,10 +244,10 @@ class ProjectsRestriction(Restriction):
         Normalized project names this token may upload to.
     """
 
-    projects: List[str]
+    projects: list[str]
 
     @staticmethod
-    def _get_schema() -> Dict:
+    def _get_schema() -> dict:
         return {
             "type": "object",
             "properties": {
@@ -264,10 +266,10 @@ class ProjectsRestriction(Restriction):
         }
 
     @classmethod
-    def _extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: dict) -> dict:
         return {"projects": value["permissions"]["projects"]}
 
-    def dump(self) -> Dict:
+    def dump(self) -> dict:
         return {"version": 1, "permissions": {"projects": self.projects}}
 
     def check(self, context: Context) -> None:
@@ -282,9 +284,9 @@ class ProjectsRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        projects: Optional[List[str]] = None,
+        projects: list[str] | None = None,
         **kwargs,
-    ) -> Optional["ProjectsRestriction"]:
+    ) -> ProjectsRestriction | None:
         if projects is not None:
             return cls(projects=projects)
         return None
@@ -308,7 +310,7 @@ class DateRestriction(Restriction):
     not_after: int
 
     @staticmethod
-    def _get_schema() -> Dict:
+    def _get_schema() -> dict:
         return {
             "type": "object",
             "properties": {
@@ -320,13 +322,13 @@ class DateRestriction(Restriction):
         }
 
     @classmethod
-    def _extract_kwargs(cls, value: Dict) -> Dict:
+    def _extract_kwargs(cls, value: dict) -> dict:
         return {
             "not_before": value["nbf"],
             "not_after": value["exp"],
         }
 
-    def dump(self) -> Dict:
+    def dump(self) -> dict:
         return {"nbf": self.not_before, "exp": self.not_after}
 
     def check(self, context: Context) -> None:
@@ -342,10 +344,10 @@ class DateRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        not_before: Optional[Union[datetime.datetime, int]] = None,
-        not_after: Optional[Union[datetime.datetime, int]] = None,
+        not_before: datetime.datetime | int | None = None,
+        not_after: datetime.datetime | int | None = None,
         **kwargs,
-    ) -> Optional["DateRestriction"]:
+    ) -> DateRestriction | None:
         if not_before or not_after:
             if not (not_before and not_after):
                 raise exceptions.InvalidRestriction(
@@ -360,7 +362,7 @@ class DateRestriction(Restriction):
         return None
 
     @staticmethod
-    def timestamp_from_parameter(param: Union[datetime.datetime, int]) -> int:
+    def timestamp_from_parameter(param: datetime.datetime | int) -> int:
         if isinstance(param, int):
             return param
         # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
@@ -425,7 +427,7 @@ class Token:
         return self._macaroon.identifier.decode("utf-8")
 
     @classmethod
-    def load(cls, raw: str) -> "Token":
+    def load(cls, raw: str) -> Token:
         """
         Deserialize a `Token` from a raw string.
         Warning: does NOT check for the Token validity, you need to call `check`
@@ -467,10 +469,10 @@ class Token:
         cls,
         domain: str,
         identifier: str,
-        key: Union[str, bytes],
+        key: str | bytes,
         prefix: str = PREFIX,
         version: int = pymacaroons.MACAROON_V2,
-    ) -> "Token":
+    ) -> Token:
         """
         Create a token. Initially, it has no restruction, but they can be added
         with restrict.
@@ -509,7 +511,7 @@ class Token:
         token = cls(prefix=prefix, macaroon=macaroon)
         return token
 
-    def restrict(self, **kwargs) -> "Token":
+    def restrict(self, **kwargs) -> Token:
         """
         Modifies the token in-place to add restrictions to it. This can be called by
         PyPI as well as by anyone, adding restrictions to new or existing tokens.
@@ -564,9 +566,7 @@ class Token:
         """
         return f"{self.prefix}-{self._macaroon.serialize()}"
 
-    def check(
-        self, key: Union[str, bytes], project: str, now: Optional[int] = None
-    ) -> None:
+    def check(self, key: str | bytes, project: str, now: int | None = None) -> None:
         """
         Raises pypitoken.ValidationError if the token is invalid.
 
@@ -592,12 +592,12 @@ class Token:
         """
         verifier = pymacaroons.Verifier()
 
-        context_kwargs: Dict[str, Any] = {"project": project}
+        context_kwargs: dict[str, Any] = {"project": project}
         if now:
             context_kwargs["now"] = now
         context = Context(**context_kwargs)
 
-        errors: List[Exception] = []
+        errors: list[Exception] = []
 
         verifier.satisfy_general(
             functools.partial(self._check_caveat, context=context, errors=errors)
@@ -616,7 +616,7 @@ class Token:
             ) from exc
 
     @staticmethod
-    def _check_caveat(caveat: str, context: Context, errors: List[Exception]) -> bool:
+    def _check_caveat(caveat: str, context: Context, errors: list[Exception]) -> bool:
         """
         This method follows the pymacaroon Verifier.satisfy_general API, except
         that it takes a context parameter. It's expected to be used with
@@ -654,7 +654,7 @@ class Token:
         return True
 
     @property
-    def restrictions(self) -> List[Restriction]:
+    def restrictions(self) -> list[Restriction]:
         """
         Return a list of restrictions associated to this `Token`. This can be used
         to get a better insight on what this `Token` contains.

@@ -4,8 +4,13 @@
 # list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# -- Path setup --------------------------------------------------------------
+from __future__ import annotations
 
+import datetime
+import pathlib
+import sys
+
+# -- Path setup --------------------------------------------------------------
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -14,9 +19,6 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import datetime
-import pathlib
-import sys
 
 # -- Project information -----------------------------------------------------
 project = "PyPIToken"
