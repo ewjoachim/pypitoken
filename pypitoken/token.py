@@ -1,7 +1,7 @@
 import dataclasses
 import functools
 import json
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar, Union
 
 import jsonschema
 import pymacaroons
@@ -139,6 +139,24 @@ class Restriction:
         """
         raise NotImplementedError
 
+    @classmethod
+    def from_parameters(cls: Type[T], **kwargs) -> Optional[T]:
+        """
+        Contructs an instance from the parameters passed to `Token.restrict`
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def restrictions_from_parameters(cls, **kwargs) -> Iterable["Restriction"]:
+        """
+        Contructs an iterable of Restriction subclass instances from the parameters
+        passed to `Token.restrict`
+        """
+        for subclass in cls._get_subclasses():
+            restriction = subclass.from_parameters(**kwargs)
+            if restriction:
+                yield restriction
+
     def check(self, context: Context) -> None:
         """
         Receive the context of a check
@@ -197,6 +215,12 @@ class NoopRestriction(Restriction):
     def dump(self) -> Dict:
         return {"version": 1, "permissions": "user"}
 
+    @classmethod
+    def from_parameters(cls, **kwargs) -> Optional["NoopRestriction"]:
+        if not kwargs:
+            return cls()
+        return None
+
 
 @dataclasses.dataclass
 class ProjectsRestriction(Restriction):
@@ -245,6 +269,16 @@ class ProjectsRestriction(Restriction):
                 f"This token can only be used for project(s): "
                 f"{', '.join(self.projects)}. Received: {project}"
             )
+
+    @classmethod
+    def from_parameters(
+        cls,
+        projects: Optional[List[str]] = None,
+        **kwargs,
+    ) -> Optional["ProjectsRestriction"]:
+        if projects is not None:
+            return cls(projects=projects)
+        return None
 
 
 class Token:
@@ -382,10 +416,7 @@ class Token:
         token = cls(prefix=prefix, macaroon=macaroon)
         return token
 
-    def restrict(
-        self,
-        projects: Optional[List[str]] = None,
-    ) -> "Token":
+    def restrict(self, **kwargs) -> "Token":
         """
         Modifies the token in-place to add restrictions to it. This can be called by
         PyPI as well as by anyone, adding restrictions to new or existing tokens.
@@ -412,20 +443,8 @@ class Token:
         `Token`
             The modified Token, to ease chaining calls.
         """
-        caveats: List[str] = []
-        if projects is not None:
-            caveats.append(ProjectsRestriction(projects).dump_json())
-
-        # Add other restrictions here
-
-        if not self._macaroon.caveats and not caveats:
-            # It's actually not really useful to add a noop restriction, but
-            # it's done that way in the original implementation, and has been kept so
-            # far
-            caveats = [NoopRestriction().dump_json()]
-
-        for caveat in caveats:
-            self._macaroon.add_first_party_caveat(caveat)
+        for restriction in Restriction.restrictions_from_parameters(**kwargs):
+            self._macaroon.add_first_party_caveat(restriction.dump_json())
 
         return self
 

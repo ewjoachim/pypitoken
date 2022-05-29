@@ -98,6 +98,14 @@ def test__NoopRestriction__dump():
     assert noop.dump() == {"version": 1, "permissions": "user"}
 
 
+def test__NoopRestriction__from_parameters__empty():
+    assert token.NoopRestriction.from_parameters() == token.NoopRestriction()
+
+
+def test__NoopRestriction__from_parameters__not_empty():
+    assert token.NoopRestriction.from_parameters(a=1) is None
+
+
 @pytest.mark.parametrize(
     "value, restriction",
     [
@@ -164,6 +172,16 @@ def test__ProjectsRestriction__dump():
     }
 
 
+def test__ProjectsRestriction__from_parameters__empty():
+    assert token.ProjectsRestriction.from_parameters() is None
+
+
+def test__ProjectsRestriction__from_parameters__not_empty():
+    assert token.ProjectsRestriction.from_parameters(
+        projects=["a", "b"]
+    ) == token.ProjectsRestriction(projects=["a", "b"])
+
+
 def test__Restriction__get_subclasses():
     # This test ensures we didn't forget to add new restriction classes to
     # the set.
@@ -218,6 +236,18 @@ def test__Restriction__load_json():
         caveat='{"version": 1, "permissions": "user"}'
     )
     assert restriction == token.NoopRestriction()
+
+
+def test__Restriction__restrictions_from_parameters():
+    restrictions = list(
+        token.Restriction.restrictions_from_parameters(
+            projects=["a", "b"], not_before=1, not_after=5
+        )
+    )
+    assert restrictions == [
+        token.ProjectsRestriction(projects=["a", "b"]),
+        token.DateRestriction(not_before=1, not_after=5),
+    ]
 
 
 def test__Token__check_caveat__pass():
