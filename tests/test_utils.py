@@ -16,9 +16,9 @@ def test__merge_parameters():
 
     assert result == [
         inspect.Parameter(
-            "b", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=int
+            "b", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation="int"
         ),
-        inspect.Parameter("d", kind=inspect.Parameter.KEYWORD_ONLY, annotation=float),
+        inspect.Parameter("d", kind=inspect.Parameter.KEYWORD_ONLY, annotation="float"),
     ]
 
 

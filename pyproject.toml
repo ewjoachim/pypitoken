@@ -15,23 +15,22 @@ documentation = "https://pypitoken.readthedocs.io/en/latest/"
 keywords = ["pypi", "api", "token", "security", "packaging"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 pymacaroons = "^0.13.0"
 jsonschema = "*"
-dataclasses = { version = "*", python = "~3.6" }
 
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.0"
-pytest-cov = "^3.0.0"
+pytest = "*"
+pytest-cov = "*"
 Sphinx = "<4"
-sphinx-material = "^0.0.35"
-sphinx-github-changelog = "^1.0.2"
-sphinx-autodoc-typehints = "^1.11.1"
-dunamai = "^1.12.0"
-black = { version = "*", python = ">=3.6.2" }
-isort = { version = "*", python = ">=3.6.1" }
-flake8 = "^4.0.1"
+sphinx-material = "*"
+sphinx-github-changelog = "*"
+sphinx-autodoc-typehints = "*"
+dunamai = "*"
+black = "*"
+isort = "*"
+flake8 = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
