@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class PyPITokenException(Exception):
     """
     The base exception for all exceptions raised

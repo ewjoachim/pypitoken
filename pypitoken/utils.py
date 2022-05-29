@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import inspect
-from typing import Callable, List
+from typing import Callable
 
 
-def merge_parameters(*callables: Callable) -> List[inspect.Parameter]:
+def merge_parameters(*callables: Callable) -> list[inspect.Parameter]:
     """
     Return a list of Parameters object matching every parameters from input callables.
     """
@@ -14,7 +16,7 @@ def merge_parameters(*callables: Callable) -> List[inspect.Parameter]:
     ]
 
 
-def replace_signature(method: Callable, parameters: List[inspect.Parameter]) -> None:
+def replace_signature(method: Callable, parameters: list[inspect.Parameter]) -> None:
     """
     On the received method, keep the self parameter. Replace the other parameters
     with the list reciend in ``parameters``.
