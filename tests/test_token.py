@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import inspect
 
 import pymacaroons
 import pytest
@@ -579,3 +580,9 @@ def test__Token__restrictions(create_token):
         token.ProjectsRestriction(projects=["a", "b"]),
         token.ProjectsRestriction(projects=["a", "d"]),
     ]
+
+
+def test_Token__restrict__signature():
+    assert (
+        "projects" in inspect.Signature.from_callable(token.Token.restrict).parameters
+    )

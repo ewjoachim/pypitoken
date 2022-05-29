@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar, Union
 import jsonschema
 import pymacaroons
 
-from pypitoken import exceptions
+from pypitoken import exceptions, utils
 
 PREFIX = "pypi"
 
@@ -148,6 +148,12 @@ class Restriction:
         Contructs an instance from the parameters passed to `Token.restrict`
         """
         raise NotImplementedError
+
+    @classmethod
+    def restriction_parameters(cls):
+        return utils.merge_parameters(
+            *(subclass.from_parameters for subclass in cls._get_subclasses())
+        )
 
     @classmethod
     def restrictions_from_parameters(cls, **kwargs) -> Iterable["Restriction"]:
@@ -666,3 +672,8 @@ class Token:
             Restriction.load_json(caveat=caveat.caveat_id)
             for caveat in self._macaroon.caveats
         ]
+
+
+utils.replace_signature(
+    method=Token.restrict, parameters=Restriction.restriction_parameters()
+)
