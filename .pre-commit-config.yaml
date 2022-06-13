@@ -30,7 +30,7 @@ repos:
   - id: mypy
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.32.1
+  rev: v2.33.0
   hooks:
   - id: pyupgrade
 
@@ -40,6 +40,6 @@ repos:
   - id: doc8
 
 - repo: https://github.com/floatingpurr/sync_with_poetry
-  rev: 0.2.0
+  rev: 0.2.1
   hooks:
     - id: sync_with_poetry
