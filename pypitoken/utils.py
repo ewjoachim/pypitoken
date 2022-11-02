@@ -19,7 +19,7 @@ def merge_parameters(*callables: Callable) -> list[inspect.Parameter]:
 def replace_signature(method: Callable, parameters: list[inspect.Parameter]) -> None:
     """
     On the received method, keep the self parameter. Replace the other parameters
-    with the list reciend in ``parameters``.
+    with the list received in ``parameters``.
 
     Currently only supports methods.
     """

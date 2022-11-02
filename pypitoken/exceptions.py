@@ -11,14 +11,14 @@ class PyPITokenException(Exception):
 
 class InvalidRestriction(PyPITokenException, ValueError):
     """
-    Exception encoutered while calling `Token.restrict`, due to unexpected
+    Exception encountered while calling `Token.restrict`, due to unexpected
     parameters.
     """
 
 
 class LoaderError(PyPITokenException):
     """
-    Exception encoutered while calling `Token.load`, due to unexpected
+    Exception encountered while calling `Token.load`, due to unexpected
     format.
 
     Exception should be associated with a message in English that can be shown to the
@@ -28,7 +28,7 @@ class LoaderError(PyPITokenException):
 
 class ValidationError(PyPITokenException):
     """
-    Exception encoutered while calling `Token.check`, the token should
+    Exception encountered while calling `Token.check`, the token should
     be considered invalid.
 
     Exception should be associated with a message in English that can be shown to the

@@ -147,7 +147,7 @@ class Restriction:
     @classmethod
     def from_parameters(cls: type[T], **kwargs) -> T | None:
         """
-        Contructs an instance from the parameters passed to `Token.restrict`
+        Constructs an instance from the parameters passed to `Token.restrict`
         """
         raise NotImplementedError
 
@@ -160,7 +160,7 @@ class Restriction:
     @classmethod
     def restrictions_from_parameters(cls, **kwargs) -> Iterable[Restriction]:
         """
-        Contructs an iterable of Restriction subclass instances from the parameters
+        Constructs an iterable of Restriction subclass instances from the parameters
         passed to `Token.restrict`
         """
         for subclass in cls._get_subclasses():
