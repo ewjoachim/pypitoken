@@ -7,9 +7,9 @@ from .exceptions import (
     ValidationError,
 )
 from .token import (
-    DateRestriction,
-    NoopRestriction,
-    ProjectsRestriction,
+    LegacyDateRestriction,
+    LegacyNoopRestriction,
+    LegacyProjectsRestriction,
     Restriction,
     Token,
 )
@@ -19,9 +19,9 @@ __all__ = [
     "Token",
     "Restriction",
     # Restriction subclasses
-    "DateRestriction",
-    "NoopRestriction",
-    "ProjectsRestriction",
+    "LegacyDateRestriction",
+    "LegacyNoopRestriction",
+    "LegacyProjectsRestriction",
     # Exceptions
     "PyPITokenException",
     "InvalidRestriction",

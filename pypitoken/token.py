@@ -84,7 +84,7 @@ class Restriction:
         # We could use __subclasses__ but that could lead to all kinds of funky things,
         # especially in a security-sensistive library.
         # Tests will check this against Restriction subclasses though.
-        return [NoopRestriction, ProjectsRestriction, DateRestriction]
+        return [LegacyNoopRestriction, LegacyProjectsRestriction, LegacyDateRestriction]
 
     @staticmethod
     def _json_load_caveat(caveat: str) -> Any:
@@ -198,7 +198,7 @@ class Restriction:
 
 
 @dataclasses.dataclass
-class NoopRestriction(Restriction):
+class LegacyNoopRestriction(Restriction):
     """
     Says it restricts the `Token`, but doesn't actually restrict it.
     """
@@ -227,14 +227,14 @@ class NoopRestriction(Restriction):
         return {"version": 1, "permissions": "user"}
 
     @classmethod
-    def from_parameters(cls, **kwargs) -> NoopRestriction | None:
+    def from_parameters(cls, **kwargs) -> LegacyNoopRestriction | None:
         if not kwargs:
             return cls()
         return None
 
 
 @dataclasses.dataclass
-class ProjectsRestriction(Restriction):
+class LegacyProjectsRestriction(Restriction):
     """
     Restrict a `Token` to uploading releases for a specific set of packages.
 
@@ -286,14 +286,14 @@ class ProjectsRestriction(Restriction):
         cls,
         projects: list[str] | None = None,
         **kwargs,
-    ) -> ProjectsRestriction | None:
+    ) -> LegacyProjectsRestriction | None:
         if projects is not None:
             return cls(projects=projects)
         return None
 
 
 @dataclasses.dataclass
-class DateRestriction(Restriction):
+class LegacyDateRestriction(Restriction):
     """
     Restrict a `Token` to a single time interval.
 
@@ -347,7 +347,7 @@ class DateRestriction(Restriction):
         not_before: datetime.datetime | int | None = None,
         not_after: datetime.datetime | int | None = None,
         **kwargs,
-    ) -> DateRestriction | None:
+    ) -> LegacyDateRestriction | None:
         if not_before or not_after:
             if not (not_before and not_after):
                 raise exceptions.InvalidRestriction(

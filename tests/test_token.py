@@ -66,9 +66,11 @@ def test__Restriction__load_value__fail(value):
         MyRestriction._load_value(value=value)
 
 
-def test__NoopRestriction__load_value__pass():
-    tok = token.NoopRestriction._load_value(value={"version": 1, "permissions": "user"})
-    assert tok == token.NoopRestriction()
+def test__LegacyNoopRestriction__load_value__pass():
+    tok = token.LegacyNoopRestriction._load_value(
+        value={"version": 1, "permissions": "user"}
+    )
+    assert tok == token.LegacyNoopRestriction()
 
 
 @pytest.mark.parametrize(
@@ -82,32 +84,34 @@ def test__NoopRestriction__load_value__pass():
         {"version": 1, "permissions": "user", "additional": "key"},
     ],
 )
-def test__NoopRestriction__load_value__fail(value):
+def test__LegacyNoopRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        token.NoopRestriction._load_value(value=value)
+        token.LegacyNoopRestriction._load_value(value=value)
 
 
-def test__NoopRestriction__extract_kwargs():
-    noop = token.NoopRestriction._extract_kwargs(value={"any": "content"})
+def test__LegacyNoopRestriction__extract_kwargs():
+    noop = token.LegacyNoopRestriction._extract_kwargs(value={"any": "content"})
     assert noop == {}
 
 
-def test__NoopRestriction__check():
-    noop = token.NoopRestriction()
+def test__LegacyNoopRestriction__check():
+    noop = token.LegacyNoopRestriction()
     assert noop.check(context=token.Context(project="foo")) is None
 
 
-def test__NoopRestriction__dump():
-    noop = token.NoopRestriction()
+def test__LegacyNoopRestriction__dump():
+    noop = token.LegacyNoopRestriction()
     assert noop.dump() == {"version": 1, "permissions": "user"}
 
 
-def test__NoopRestriction__from_parameters__empty():
-    assert token.NoopRestriction.from_parameters() == token.NoopRestriction()
+def test__LegacyNoopRestriction__from_parameters__empty():
+    assert (
+        token.LegacyNoopRestriction.from_parameters() == token.LegacyNoopRestriction()
+    )
 
 
-def test__NoopRestriction__from_parameters__not_empty():
-    assert token.NoopRestriction.from_parameters(a=1) is None
+def test__LegacyNoopRestriction__from_parameters__not_empty():
+    assert token.LegacyNoopRestriction.from_parameters(a=1) is None
 
 
 @pytest.mark.parametrize(
@@ -115,20 +119,20 @@ def test__NoopRestriction__from_parameters__not_empty():
     [
         (
             {"version": 1, "permissions": {"projects": []}},
-            token.ProjectsRestriction(projects=[]),
+            token.LegacyProjectsRestriction(projects=[]),
         ),
         (
             {"version": 1, "permissions": {"projects": ["a"]}},
-            token.ProjectsRestriction(projects=["a"]),
+            token.LegacyProjectsRestriction(projects=["a"]),
         ),
         (
             {"version": 1, "permissions": {"projects": ["a", "b"]}},
-            token.ProjectsRestriction(projects=["a", "b"]),
+            token.LegacyProjectsRestriction(projects=["a", "b"]),
         ),
     ],
 )
-def test__ProjectsRestriction__load_value__pass(value, restriction):
-    assert token.ProjectsRestriction._load_value(value=value) == restriction
+def test__LegacyProjectsRestriction__load_value__pass(value, restriction):
+    assert token.LegacyProjectsRestriction._load_value(value=value) == restriction
 
 
 @pytest.mark.parametrize(
@@ -146,50 +150,50 @@ def test__ProjectsRestriction__load_value__pass(value, restriction):
         {"version": 1, "permissions": {"projects": ["a"], "additional": "key"}},
     ],
 )
-def test__ProjectsRestriction__load_value__fail(value):
+def test__LegacyProjectsRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        token.ProjectsRestriction._load_value(value=value)
+        token.LegacyProjectsRestriction._load_value(value=value)
 
 
-def test__ProjectsRestriction__extract_kwargs():
+def test__LegacyProjectsRestriction__extract_kwargs():
     value = {"version": 1, "permissions": {"projects": ["a", "b"]}}
-    kwargs = token.ProjectsRestriction._extract_kwargs(value=value)
+    kwargs = token.LegacyProjectsRestriction._extract_kwargs(value=value)
     assert kwargs == {"projects": ["a", "b"]}
 
 
-def test__ProjectsRestriction__check__pass():
-    restriction = token.ProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectsRestriction__check__pass():
+    restriction = token.LegacyProjectsRestriction(projects=["a", "b"])
     assert restriction.check(context=token.Context(project="a")) is None
 
 
-def test__ProjectsRestriction__check__fail():
-    restriction = token.ProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectsRestriction__check__fail():
+    restriction = token.LegacyProjectsRestriction(projects=["a", "b"])
     with pytest.raises(exceptions.ValidationError):
         restriction.check(context=token.Context(project="c"))
 
 
-def test__ProjectsRestriction__dump():
-    restriction = token.ProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectsRestriction__dump():
+    restriction = token.LegacyProjectsRestriction(projects=["a", "b"])
     assert restriction.dump() == {
         "version": 1,
         "permissions": {"projects": ["a", "b"]},
     }
 
 
-def test__ProjectsRestriction__from_parameters__empty():
-    assert token.ProjectsRestriction.from_parameters() is None
+def test__LegacyProjectsRestriction__from_parameters__empty():
+    assert token.LegacyProjectsRestriction.from_parameters() is None
 
 
-def test__ProjectsRestriction__from_parameters__not_empty():
-    assert token.ProjectsRestriction.from_parameters(
+def test__LegacyProjectsRestriction__from_parameters__not_empty():
+    assert token.LegacyProjectsRestriction.from_parameters(
         projects=["a", "b"]
-    ) == token.ProjectsRestriction(projects=["a", "b"])
+    ) == token.LegacyProjectsRestriction(projects=["a", "b"])
 
 
-def test__DateRestriction__load_value__pass():
-    assert token.DateRestriction._load_value(
+def test__LegacyDateRestriction__load_value__pass():
+    assert token.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
-    ) == token.DateRestriction(not_before=1_234_567_890, not_after=1_234_567_900)
+    ) == token.LegacyDateRestriction(not_before=1_234_567_890, not_after=1_234_567_900)
 
 
 @pytest.mark.parametrize(
@@ -202,19 +206,19 @@ def test__DateRestriction__load_value__pass():
         {"exp": 1_234_567_890},
     ],
 )
-def test__DateRestriction__load_value__fail(value):
+def test__LegacyDateRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        token.DateRestriction._load_value(value=value)
+        token.LegacyDateRestriction._load_value(value=value)
 
 
-def test__DateRestriction__extract_kwargs():
+def test__LegacyDateRestriction__extract_kwargs():
     value = {"nbf": 1_234_567_890, "exp": 1_234_567_900}
-    kwargs = token.DateRestriction._extract_kwargs(value=value)
+    kwargs = token.LegacyDateRestriction._extract_kwargs(value=value)
     assert kwargs == {"not_before": 1_234_567_890, "not_after": 1_234_567_900}
 
 
-def test__DateRestriction__check__pass():
-    restriction = token.DateRestriction._load_value(
+def test__LegacyDateRestriction__check__pass():
+    restriction = token.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
     )
     assert (
@@ -229,16 +233,16 @@ def test__DateRestriction__check__pass():
         1_234_568_000,
     ],
 )
-def test__DateRestriction__check__fail(value):
-    restriction = token.DateRestriction._load_value(
+def test__LegacyDateRestriction__check__fail(value):
+    restriction = token.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
     )
     with pytest.raises(exceptions.ValidationError):
         restriction.check(context=token.Context(project="a", now=value))
 
 
-def test__DateRestriction__dump():
-    restriction = token.DateRestriction._load_value(
+def test__LegacyDateRestriction__dump():
+    restriction = token.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
     )
     assert restriction.dump() == {
@@ -247,8 +251,8 @@ def test__DateRestriction__dump():
     }
 
 
-def test__DateRestriction__from_parameters__empty():
-    assert token.DateRestriction.from_parameters() is None
+def test__LegacyDateRestriction__from_parameters__empty():
+    assert token.LegacyDateRestriction.from_parameters() is None
 
 
 @pytest.mark.parametrize(
@@ -262,9 +266,9 @@ def test__DateRestriction__from_parameters__empty():
         },
     ],
 )
-def test__DateRestriction__from_parameters__fail(kwargs):
+def test__LegacyDateRestriction__from_parameters__fail(kwargs):
     with pytest.raises(exceptions.InvalidRestriction):
-        assert token.DateRestriction.from_parameters(**kwargs) is None
+        assert token.LegacyDateRestriction.from_parameters(**kwargs) is None
 
 
 @pytest.mark.parametrize(
@@ -272,7 +276,7 @@ def test__DateRestriction__from_parameters__fail(kwargs):
     [
         (
             {"not_before": 1_234_567_890, "not_after": 1_234_567_900},
-            token.DateRestriction._load_value(
+            token.LegacyDateRestriction._load_value(
                 value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
             ),
         ),
@@ -285,14 +289,14 @@ def test__DateRestriction__from_parameters__fail(kwargs):
                     2100, 1, 1, tzinfo=datetime.timezone.utc
                 ),
             },
-            token.DateRestriction._load_value(
+            token.LegacyDateRestriction._load_value(
                 value={"nbf": 946_684_800, "exp": 4_102_444_800}
             ),
         ),
     ],
 )
-def test__DateRestriction__from_parameters__ok(kwargs, expected):
-    assert token.DateRestriction.from_parameters(**kwargs) == expected
+def test__LegacyDateRestriction__from_parameters__ok(kwargs, expected):
+    assert token.LegacyDateRestriction.from_parameters(**kwargs) == expected
 
 
 def test__Restriction__get_subclasses():
@@ -323,11 +327,11 @@ def test__Restriction__json_load_caveat__fail():
     [
         (
             {"version": 1, "permissions": "user"},
-            token.NoopRestriction(),
+            token.LegacyNoopRestriction(),
         ),
         (
             {"version": 1, "permissions": {"projects": ["a", "b"]}},
-            token.ProjectsRestriction(projects=["a", "b"]),
+            token.LegacyProjectsRestriction(projects=["a", "b"]),
         ),
     ],
 )
@@ -348,7 +352,7 @@ def test__Restriction__load_json():
     restriction = token.Restriction.load_json(
         caveat='{"version": 1, "permissions": "user"}'
     )
-    assert restriction == token.NoopRestriction()
+    assert restriction == token.LegacyNoopRestriction()
 
 
 def test__Restriction__restrictions_from_parameters():
@@ -358,8 +362,8 @@ def test__Restriction__restrictions_from_parameters():
         )
     )
     assert restrictions == [
-        token.ProjectsRestriction(projects=["a", "b"]),
-        token.DateRestriction(not_before=1, not_after=5),
+        token.LegacyProjectsRestriction(projects=["a", "b"]),
+        token.LegacyDateRestriction(not_before=1, not_after=5),
     ]
 
 
@@ -578,9 +582,9 @@ def test__Token__restrictions(create_token):
     tok.restrict(projects=["a", "b"])
     tok.restrict(projects=["a", "d"])
     assert tok.restrictions == [
-        token.NoopRestriction(),
-        token.ProjectsRestriction(projects=["a", "b"]),
-        token.ProjectsRestriction(projects=["a", "d"]),
+        token.LegacyNoopRestriction(),
+        token.LegacyProjectsRestriction(projects=["a", "b"]),
+        token.LegacyProjectsRestriction(projects=["a", "d"]),
     ]
 
 
