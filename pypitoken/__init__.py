@@ -6,13 +6,13 @@ from .exceptions import (
     PyPITokenException,
     ValidationError,
 )
-from .token import (
+from .restrictions import (
     LegacyDateRestriction,
     LegacyNoopRestriction,
     LegacyProjectsRestriction,
     Restriction,
-    Token,
 )
+from .token import Token
 
 __all__ = [
     # Main classes
