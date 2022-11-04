@@ -24,7 +24,9 @@ class Context:
         Normalized name of the project the bearer is attempting to upload to
     """
 
-    project: str
+    project_name: str
+    project_id: str
+    user_id: str
     now: int = dataclasses.field(default_factory=lambda: int(time.time()))
 
 
@@ -275,10 +277,10 @@ class LegacyProjectsRestriction(Restriction):
     def check(self, context: Context) -> None:
         project = context.project_name
 
-        if project not in self.projects:
+        if project not in self.project_names:
             raise exceptions.ValidationError(
                 f"This token can only be used for project(s): "
-                f"{', '.join(self.projects)}. Received: {project}"
+                f"{', '.join(self.project_names)}. Received: {project}"
             )
 
     @classmethod
