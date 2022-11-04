@@ -344,16 +344,17 @@ class LegacyDateRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        not_before: datetime.datetime | int | None = None,
-        not_after: datetime.datetime | int | None = None,
+        legacy_not_before: datetime.datetime | int | None = None,
+        legacy_not_after: datetime.datetime | int | None = None,
         **kwargs,
     ) -> LegacyDateRestriction | None:
-        if not_before or not_after:
-            if not (not_before and not_after):
+        if legacy_not_before or legacy_not_after:
+            if not (legacy_not_before and legacy_not_after):
                 raise exceptions.InvalidRestriction(
-                    "`not_before` and `not_after` parameters must be used together. "
-                    "Either define both or neither. "
-                    f"Received not_before={not_before} and not_after={not_after}"
+                    "`legacy_not_before` and `legacy_not_after` parameters "
+                    "must be used together. Either define both or neither. "
+                    f"Received legacy_not_before={legacy_not_before} and "
+                    f"legacy_not_after={legacy_not_after}"
                 )
             return cls(
                 not_before=timestamp_from_parameter(legacy_not_before),
