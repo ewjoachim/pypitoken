@@ -244,7 +244,7 @@ class LegacyProjectsRestriction(Restriction):
         Normalized project names this token may upload to.
     """
 
-    projects: list[str]
+    project_names: list[str]
 
     @staticmethod
     def _get_schema() -> dict:
@@ -267,13 +267,13 @@ class LegacyProjectsRestriction(Restriction):
 
     @classmethod
     def _extract_kwargs(cls, value: dict) -> dict:
-        return {"projects": value["permissions"]["projects"]}
+        return {"project_names": value["permissions"]["projects"]}
 
     def dump(self) -> dict:
-        return {"version": 1, "permissions": {"projects": self.projects}}
+        return {"version": 1, "permissions": {"projects": self.project_names}}
 
     def check(self, context: Context) -> None:
-        project = context.project
+        project = context.project_name
 
         if project not in self.projects:
             raise exceptions.ValidationError(
@@ -284,11 +284,11 @@ class LegacyProjectsRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        projects: list[str] | None = None,
+        legacy_project_names: list[str] | None = None,
         **kwargs,
     ) -> LegacyProjectsRestriction | None:
-        if projects is not None:
-            return cls(projects=projects)
+        if legacy_project_names is not None:
+            return cls(project_names=legacy_project_names)
         return None
 
 
