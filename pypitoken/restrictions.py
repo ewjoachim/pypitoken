@@ -352,21 +352,21 @@ class LegacyDateRestriction(Restriction):
                     f"Received not_before={not_before} and not_after={not_after}"
                 )
             return cls(
-                not_before=cls.timestamp_from_parameter(not_before),
-                not_after=cls.timestamp_from_parameter(not_after),
+                not_before=timestamp_from_parameter(legacy_not_before),
+                not_after=timestamp_from_parameter(legacy_not_after),
             )
         return None
 
-    @staticmethod
-    def timestamp_from_parameter(param: datetime.datetime | int) -> int:
-        if isinstance(param, int):
-            return param
-        # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
-        naive = param.tzinfo is None or param.tzinfo.utcoffset(param) is None
-        if naive:
-            raise exceptions.InvalidRestriction(
-                "Cannot use a naive datetime. Either provide a timezone or "
-                "the timestamp directly. "
-                "Received {param}"
-            )
-        return int(param.timestamp())
+
+def timestamp_from_parameter(param: datetime.datetime | int) -> int:
+    if isinstance(param, int):
+        return param
+    # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
+    naive = param.tzinfo is None or param.tzinfo.utcoffset(param) is None
+    if naive:
+        raise exceptions.InvalidRestriction(
+            "Cannot use a naive datetime. Either provide a timezone or "
+            "the timestamp directly. "
+            "Received {param}"
+        )
+    return int(param.timestamp())
