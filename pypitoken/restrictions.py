@@ -223,8 +223,12 @@ class LegacyNoopRestriction(Restriction):
         return {"version": 1, "permissions": "user"}
 
     @classmethod
-    def from_parameters(cls, **kwargs) -> LegacyNoopRestriction | None:
-        if not kwargs:
+    def from_parameters(
+        cls,
+        legacy_noop: bool | None = None,
+        **kwargs,
+    ) -> LegacyNoopRestriction | None:
+        if legacy_noop is True:
             return cls()
         return None
 
