@@ -26,11 +26,11 @@ PyPIToken: Manipulate PyPI API tokens
     :alt: Coverage
 
 .. image:: https://img.shields.io/github/license/ewjoachim/pypitoken?logo=open-source-initiative&logoColor=white
-    :target: https://github.com/ewjoachim/pypitoken/blob/master/LICENSE
+    :target: https://github.com/ewjoachim/pypitoken/blob/main/LICENSE
     :alt: MIT License
 
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg
-    :target: https://github.com/ewjoachim/pypitoken/blob/master/CODE_OF_CONDUCT.md
+    :target: https://github.com/ewjoachim/pypitoken/blob/main/CODE_OF_CONDUCT.md
     :alt: Contributor Covenant
 
 
