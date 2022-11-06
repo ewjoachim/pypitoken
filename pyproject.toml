@@ -20,14 +20,20 @@ pymacaroons = "^0.13.0"
 jsonschema = "*"
 typing-extensions = "*"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-mock = "*"
+[tool.poetry.group.releasec.dependencies]
+dunamai = "*"
+
+[tool.poetry.group.docs.dependencies]
 Sphinx = ">=5"
 sphinx-material = "*"
 sphinx-github-changelog = "*"
-dunamai = "*"
+
+[tool.poetry.group.tests.dependencies]
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+
+[tool.poetry.group.lint.dependencies]
 black = "*"
 isort = "*"
 flake8 = "*"
