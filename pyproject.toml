@@ -18,19 +18,20 @@ keywords = ["pypi", "api", "token", "security", "packaging"]
 python = "^3.7"
 pymacaroons = "^0.13.0"
 jsonschema = "*"
+typing-extensions = "*"
 
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-cov = "*"
-Sphinx = "<4"
+pytest-mock = "*"
+Sphinx = ">=5"
 sphinx-material = "*"
 sphinx-github-changelog = "*"
-sphinx-autodoc-typehints = "*"
 dunamai = "*"
 black = "*"
 isort = "*"
 flake8 = "*"
+mypy = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
