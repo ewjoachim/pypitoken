@@ -143,7 +143,7 @@ Now let's implement our ``add_restriction`` function in ``tutorial.py``::
         token = Token.load(raw_token)
         print("Original restrictions:", token.restrictions, file=sys.stderr)
 
-        token.restrict(projects=[project])
+        token.restrict(project_names=[project])
         print("New restrictions:", token.restrictions, file=sys.stderr)
 
         return token.dump()
@@ -151,15 +151,16 @@ Now let's implement our ``add_restriction`` function in ``tutorial.py``::
 Going line by line:
 
 - ``token = Token.load(raw_token)`` loads the token in string form into an object.
-  An exception might be raised here, of the type ``pypitoken.LoaderError``.
+  An exception might be raised here, of the type `pypitoken.LoaderError`.
 - ``print(...)``: This is a debug step, that will show us the
   restrictions our token contains. When called the second time, it should contain
   our new restriction.
-- ``token.restrict(projects=[project])`` adds new restrictions to our token. Here, we're
-  using the ``projects`` keywords which expects a list of projects, but we only
-  have a single project to pass, so we make a list with a single object.
-- ``return token.dump()``: Then we turn our modified token back int a string and return
-  it.
+- ``token.restrict(project_names=[project])`` adds new restrictions to our
+  token. Here, we're using the ``projects`` keywords which expects a list of
+  projects, but we only have a single project to pass, so we make a list with a
+  single object.
+- ``return token.dump()``: Then we turn our modified token back int a string
+  and return it.
 
 Test it
 -------

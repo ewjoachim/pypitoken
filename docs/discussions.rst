@@ -64,26 +64,50 @@ then from the database, the key and user are extracted. The macaroon is checked 
 the key and caveats are checked against the upload information. If the macaroon is
 valid, then PyPI checks if the user has upload rights on the package, and then proceeds.
 
-The caveats are json-encoded strings, and as of May 2022, they come in 3 flavors:
+The caveats are json-encoded strings, and as of October 2022, they come in 7 flavors:
+4 new caveats and 3 legacy caveats.
+The legacy caveat are represented by classes prefixed by ``Legacy``.
 
-- ``"{"version": 1, "permissions": "user"}"`` (note: it's the string ``"user"`` here,
-  not a placeholder for the username), which is always met. It's represented in this
-  library by the class `NoopRestriction`,
-- ``"{"version": 1, "permissions": {"projects": ["<project name>", ...]}}"`` (note:
-  ``"<project name>"`` is a placeholder here). It's met if the project we upload
-  is among the ones listed in the caveats. It's represented by the
-  `ProjectsRestriction`.
-- ``"{"nbf": <timestamp>, "exp": <timestamp>}"``. It's met if we try uploading
-  the project between ``nbf`` (included) and ``exp`` (excluded). It's
-  represented by the
-  `DateRestriction`.
+The types of caveats are:
 
-The projects restriction that PyPI implements is limited to:
+- ``[0, <timestamp: int>, <timestamp: int>]`` is met if we try uploading the
+  project between ``nbf`` (included) and ``exp`` (excluded). It's represented
+  by the class `DateRestriction`. Legacy format is ``"{"nbf": <timestamp: int>,
+  "exp": <timestamp: int>}"`` and the corresponding class is
+  `LegacyDateRestriction`.
 
-- a single project per token (even if the restriction format allows multiple projects)
-- creating tokens for existing projects you own (even though it's perfectly possible
-  to create tokens for projects that don't exist yet, or for which you don't have
-  upload permission yet).
+- ``[1, [<project_name: str>, ...]]`` is met if the project we upload is among
+  the ones listed in the caveats. It's represented by the class
+  `ProjectNamesRestriction`. Legacy format is ``{"version": 1, "permissions":
+  {"projects": [<project_name: str>, ...]}}`` and the corresponding class is
+  `LegacyProjectNamesRestriction`.
+
+- ``[2, [<project_id: str>, ...]]`` is met if the project we upload is among
+  the ones listed in the caveats. It's represented by the class
+  `ProjectIDsRestriction`. There is no legacy equivalent.
+
+- ``[3, <user_id: str>]`` is met if the user triggering the upload is the
+  one associated whit that UUID. It's represented by the class
+  `UserIDRestriction`
+
+- ``{"version": 1, "permissions": "user"}`` which is always met. It's
+  represented in this library by the class `LegacyNoopRestriction`.
+
+Within the PyPI website as of October 2022, one may generate tokens. Those tokens are
+either associated with a single project or with the how account.
+
+If they are associated to a single project, they will come with a
+`ProjectNamesRestriction` with a single value (the normalized name of the project)
+and a `ProjectIDsRestriction` with a single value (the ID if the project).
+
+If they are not associated with a project, they will come with a `UserIDRestriction`
+associated with the user who generated the token.
+
+If they were generated before August 2022, they may come with legacy restrictions.
+
+There is currently no way in the website's interface to generate tokens with
+a `DateRestriction` or associated with multiple projects, but if such a token
+was received, PyPI would interpret it correctly.
 
 .. note::
 
@@ -93,19 +117,20 @@ The projects restriction that PyPI implements is limited to:
 Do we really need an abstraction layer over PyMacaroons?
 --------------------------------------------------------
 
-Yes ? No ? Maybe ? What's clear is that the implementation in PyPI is adding some
-unnecessary complexity, and the community would benefit from a single source of
-macaroons, so that the same codebase will be responsible for serializing and
-deserializing the custom PyPI token restrictions.
+Yes ? No ? Maybe ? What's clear is that the community would benefit from a
+single source of macaroons, so that the same codebase would be responsible for
+serializing and deserializing the custom PyPI token restrictions.
 
 Can we add new restrictions?
 ----------------------------
 
-As long as PyPI doesn't use ``pypitoken`` to generate tokens, it's not very useful
-to implement new restrictions. But once we get it merged, then we'll want to add plenty
-of new and smart restrictions (based on time, upload file name and hash, etc)
+As long as PyPI doesn't use ``pypitoken`` to generate tokens, it's not very
+useful to implement new restrictions here that would not already be supported
+by PyPI. We're doing our best to have this library follow developments of PyPI
+itself, and provide feature-parity.
 
-The restrictions planned for the future are:
+In discussions around PyPI development, the following restrictions that have
+been mentionned:
 
 - Version-based restriction
 - Filename-based restriction
@@ -113,7 +138,6 @@ The restrictions planned for the future are:
 - IP-based restriction
 - One-time-use restriction (this will require Warehouse to remember a value)
 - Somehow restricting to uploads coming from a given project's CI
-- ...? (ideas welcome)
 
 Most of those were initially discussed in the `Warehouse tracker`__.
 
@@ -132,10 +156,10 @@ Is this library a part of PyPI?
 It's being developper externally. The initiator of this project is a member of the
 Python Packaging Authority (PyPA) and PyPI moderator, but not an admin nor a committer.
 
-As of today, the library is not part of the PyPA. Once this lib is done, it's planned
-to apply for this lib to be added to PyPA.
+There was an offer__ for this library to be adopted by PyPA, but it didn't gain any
+traction
 
-.. _Macaroon recipe:
+.. __: https://discuss.python.org/t/pypitoken-a-library-for-generating-and-manipulating-pypi-tokens/7572
 
 Why is there a noop restriction?
 --------------------------------
@@ -144,32 +168,20 @@ Good question. The author is not sure either. In the original discussions in War
 the idea was to have 2 types of tokens: "user" tokens and "projects" tokens. But even
 without restrictions, tokens are already scoped to a specific user, so adding a "user"
 restriction actually changes nothing, thus why it's implemented in ``pypitoken`` as a
-`NoopRestriction`.
+`LegacyNoopRestriction`.
 
-Though it's not been tested yet, tokens without restrictions should work the same
-as tokens with a noop restriction (or, for what it's worth, token with multiple noop
-restrictions).
+Tokens without restrictions work the same as tokens with a noop restriction
+(or, for what it's worth, token with multiple noop restrictions).
 
-Should we have multiple restrictions in a single caveat?
---------------------------------------------------------
-
-This is a real question we may encounter when we'll have multiple types of restrictions:
-when we want to apply a restriction to multiple aspects, should we implement all of them
-in a single caveat modelling all the aspects, or should each restriction be its own
-caveat?
-
-It can be noted that "user" (noop) restrictions and "projects" restrictions are not
-compatible, so this would tend to indicate it was not planned for multiple restrictions
-to be grouped into a single caveat.
-
-Having multiple restrictions in a single json payload makes it harder to check whether
-it's valid or not (at least, while the general format of the json payloads is not
-unified). No definitive answer is given at this time.
+Note that when the restrictions were re-worked in PyPI in Summer 2022, the
+"user" caveat was actually associated with a check that the request was
+originated by the corresponding user. This is mainly relevant around OpenID
+Connect use-cases.
 
 What does "normalized name" mean?
 ---------------------------------
 
-Throughout the doc, the term "normalized name" for a project is regularily used.
+Throughout the doc, the term "normalized name" for a project is regularly used.
 This is because some characters are synonymous in a project name, so in order to match
 a project name, we need to put it to canonical form first.
 
@@ -206,6 +218,8 @@ Adding restrictions yourself on existing tokens have consequences on those eleme
 This way, your PyPI account page will still be a good place to track all of your
 existing tokens, and you will be able to follow each of them easily.
 
+.. _Macaroon recipe:
+
 All this talking about Macaroons, I'm hungry now!
 -------------------------------------------------
 
@@ -222,12 +236,12 @@ Ingredients:
 Steps:
 
 1. Preheat oven to 50°C.
-2. Spread the gound almonds on a baking sheet, put in oven for 10 to 15 minutes.
+2. Spread the ground almonds on a baking sheet, put in oven for 10 to 15 minutes.
 3. Remove it from oven, let it cool and mix with sugar.
 4. Whip the egg whites stiff and add a few drops of bitter almond.
 5. Using a rubber spatula, fold the egg whites into the sugar & almond batter.
 6. Pour the batter into a piping bag with a ribbed nozzle.
-7. Form the macaroons on baking paper and leave them to rest for 2h at ambiant
+7. Form the macaroons on baking paper and leave them to rest for 2h at ambient
    temperature.
 8. Preheat oven to 190°C.
 9. Lower the oven to 180°C, and put the macaroons in for 3 minutes, then 15 minutes at
