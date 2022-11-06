@@ -34,8 +34,12 @@ sys.path.append(str(pathlib.Path("sphinxext").absolute()))
 extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx_github_changelog",
 ]
+
+napoleon_numpy_docstring = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -58,11 +62,16 @@ suppress_warnings = ["ref.term"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_material"
+html_theme = "furo"
 
-html_sidebars = {
-    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
+html_theme_options = {
+    "source_repository": "https://github.com/pradyunsg/furo/",
+    "source_branch": "main",
+    "source_directory": "docs/",
 }
+
+pygments_style = "sphinx"
+pygments_dark_style = "monokai"
 
 html_logo = "macaroon.png"
 html_logo_text = "macaroon by Izwar Muis from the Noun Project"
@@ -72,23 +81,3 @@ html_favicon = "favicon.ico"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ["_static"]
-
-html_theme_options = {
-    # Set the name of the project to appear in the navigation.
-    "nav_title": "PyPIToken",
-    # Specify a base_url used to generate sitemap.xml. If not
-    # specified, then no sitemap will be built.
-    "base_url": "https://pypitoken.readthedocs.io/",
-    # Set the color and the accent color
-    "color_primary": "indigo",
-    "color_accent": "light-blue",
-    # Set the repo location to get a badge with stats
-    "repo_url": "https://github.com/ewjoachim/pypitoken",
-    "repo_name": "PyPIToken",
-    # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": 2,
-    # If False, expand all TOC entries
-    "globaltoc_collapse": False,
-    # If True, show hidden TOC entries
-    "globaltoc_includehidden": False,
-}

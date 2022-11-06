@@ -24,17 +24,17 @@ class Token:
 
     Attributes
     ----------
-    prefix : str
+    prefix : ``str``
         PyPI tokens are usually prefixed with ``pypi``, but this is arbitrary
-    domain : str
+    domain : ``str``
         PyPI tokens are attached to a specific domain, usually ``pypi.org`` or
         ``test.pypi.org``
-    identifier : str
+    identifier : ``str``
         This part is how PyPI will find a token in its database and associate it to a
         specific user. Even when additional restrictions are added to a token, the
         identifier will still be readable in the token. While this is not exactly
         a secret part of the token, it's best to keep it reasonably private.
-    _macaroon : pymacarrons.Macaroon
+    _macaroon : ``pymacarrons.Macaroon``
         This is part of the private API and may be subject to change at any time.
         This gives you access to the underlying Macaroon, if you need to do low-level
         operations, or just want to poke around.
