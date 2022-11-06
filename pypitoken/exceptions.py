@@ -34,3 +34,13 @@ class ValidationError(PyPITokenException):
     Exception should be associated with a message in English that can be shown to the
     bearer to explain the error.
     """
+
+
+class MissingContextError(ValidationError):
+    """
+    Exception encountered while calling `Token.check`, the token should
+    be considered invalid.
+
+    The restriction couldn't be checked because the context is missing required
+    values
+    """

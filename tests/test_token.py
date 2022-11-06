@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import inspect
-
-import pymacaroons
 import pytest
 
 from pypitoken import exceptions, restrictions, token
@@ -12,7 +9,7 @@ def test__Token__check_caveat__pass():
     errors = []
     value = token.Token._check_caveat(
         caveat='{"version": 1, "permissions": {"projects": ["a", "b"]}}',
-        context=restrictions.Context(project="a"),
+        context=restrictions.Context(project_name="a"),
         errors=errors,
     )
     assert value is True
@@ -22,7 +19,7 @@ def test__Token__check_caveat__pass():
 def test__check_caveat__fail_load_json():
     errors = []
     value = token.Token._check_caveat(
-        "{", context=restrictions.Context(project="a"), errors=errors
+        "{", context=restrictions.Context(project_name="a"), errors=errors
     )
     assert value is False
     messages = [str(e) for e in errors]
@@ -36,7 +33,7 @@ def test__check_caveat__fail_load_json():
 def test__check_caveat__fail_load():
     errors = []
     value = token.Token._check_caveat(
-        '{"version": 13}', context=restrictions.Context(project="a"), errors=errors
+        '{"version": 13}', context=restrictions.Context(project_name="a"), errors=errors
     )
     assert value is False
     messages = [str(e) for e in errors]
@@ -48,42 +45,12 @@ def test__check_caveat__fail_check():
 
     value = token.Token._check_caveat(
         '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
-        context=restrictions.Context(project="c"),
+        context=restrictions.Context(project_name="c"),
         errors=errors,
     )
     assert value is False
     messages = [str(e) for e in errors]
     assert messages == ["This token can only be used for project(s): a, b. Received: c"]
-
-
-@pytest.fixture
-def create_macaroon():
-    def _(**kwargs):
-        defaults = {
-            "location": "example.com",
-            "identifier": "123foo",
-            "key": "ohsosecret",
-            "version": pymacaroons.MACAROON_V2,
-        }
-        defaults.update(kwargs)
-        return pymacaroons.Macaroon(**defaults)
-
-    return _
-
-
-@pytest.fixture
-def create_token():
-    def _(**kwargs):
-        defaults = {
-            "domain": "example.com",
-            "identifier": "123foo",
-            "key": "ohsosecret",
-            "prefix": "pre",
-        }
-        defaults.update(kwargs)
-        return token.Token.create(**defaults)
-
-    return _
 
 
 def test__Token__init(create_macaroon):
@@ -151,14 +118,13 @@ def test__Token__restrict__empty(create_token):
     assert tok._macaroon.caveats == []
     tok.restrict()
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
-    assert caveats == ['{"version": 1, "permissions": "user"}']
+    assert caveats == []
 
 
 def test__Token__restrict__projects(create_token):
-
     tok = create_token()
     assert tok._macaroon.caveats == []
-    tok.restrict(projects=["a", "b"])
+    tok.restrict(legacy_project_names=["a", "b"])
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
     assert caveats == ['{"version": 1, "permissions": {"projects": ["a", "b"]}}']
 
@@ -167,38 +133,28 @@ def test__Token__restrict__multiple(create_token):
 
     tok = create_token()
     assert tok._macaroon.caveats == []
-    tok.restrict()
-    tok.restrict(projects=["a", "b"])
-    tok.restrict(projects=["a", "d"])
+    tok.restrict(project_names=["a", "b"])
+    tok.restrict(legacy_project_names=["a", "d"])
     caveats = [c._caveat_id.decode("utf-8") for c in tok._macaroon.caveats]
     assert caveats == [
-        '{"version": 1, "permissions": "user"}',
-        '{"version": 1, "permissions": {"projects": ["a", "b"]}}',
+        '[1, ["a", "b"]]',
         '{"version": 1, "permissions": {"projects": ["a", "d"]}}',
     ]
 
 
-@pytest.mark.parametrize("key", ["ohsosecret", b"ohsosecret"])
-def test__Token__check__pass(create_token, key):
-
+def test__Token__check__pass(create_token):
+    key = "ohsosecret"
     tok = create_token(key=key)
-    tok.restrict(projects=["a", "b"])
-    tok.check(key=key, project="a", now=1_234_567_890)
-
-
-def test__Token__check__pass__optional_now(create_token):
-
-    tok = create_token(key="ohsosecret")
-    tok.restrict(not_before=1_000_000_000, not_after=3_000_000_000)
-    tok.check(key="ohsosecret", project="a")
+    tok.restrict(project_names=["a", "b"])
+    tok.check(key=key, project_name="a", now=1_234_567_890)
 
 
 def test__Token__check__fail__signature(create_token):
 
     tok = create_token(key="ohsosecret")
-    tok.restrict(projects=["a", "b"])
+    tok.restrict(project_names=["a", "b"])
     with pytest.raises(exceptions.ValidationError) as exc_info:
-        tok.check(key="notthatsecret", project="a")
+        tok.check(key="notthatsecret", project_name="a")
     assert (
         str(exc_info.value) == "Error while validating token: Signatures do not match"
     )
@@ -207,9 +163,9 @@ def test__Token__check__fail__signature(create_token):
 def test__Token__check__fail__caveat(create_token):
 
     tok = create_token(key="ohsosecret")
-    tok.restrict(projects=["a", "b"])
+    tok.restrict(project_names=["a", "b"])
     with pytest.raises(exceptions.ValidationError) as exc_info:
-        tok.check(key="ohsosecret", project="c")
+        tok.check(key="ohsosecret", project_name="c")
     assert (
         str(exc_info.value)
         == "Error while validating token: This token can only be used for project(s): a, b. Received: c"
@@ -219,17 +175,9 @@ def test__Token__check__fail__caveat(create_token):
 def test__Token__restrictions(create_token):
 
     tok = create_token()
-    tok.restrict()
-    tok.restrict(projects=["a", "b"])
-    tok.restrict(projects=["a", "d"])
+    tok.restrict(project_names=["a", "b"])
+    tok.restrict(project_names=["a", "d"])
     assert tok.restrictions == [
-        restrictions.LegacyNoopRestriction(),
-        restrictions.LegacyProjectsRestriction(projects=["a", "b"]),
-        restrictions.LegacyProjectsRestriction(projects=["a", "d"]),
+        restrictions.ProjectNamesRestriction(project_names=["a", "b"]),
+        restrictions.ProjectNamesRestriction(project_names=["a", "d"]),
     ]
-
-
-def test_Token__restrict__signature():
-    assert (
-        "projects" in inspect.Signature.from_callable(token.Token.restrict).parameters
-    )

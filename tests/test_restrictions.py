@@ -94,7 +94,7 @@ def test__LegacyNoopRestriction__extract_kwargs():
 
 def test__LegacyNoopRestriction__check():
     noop = restrictions.LegacyNoopRestriction()
-    assert noop.check(context=restrictions.Context(project="foo")) is None
+    assert noop.check(context=restrictions.Context()) is None
 
 
 def test__LegacyNoopRestriction__dump():
@@ -102,14 +102,14 @@ def test__LegacyNoopRestriction__dump():
     assert noop.dump() == {"version": 1, "permissions": "user"}
 
 
-def test__LegacyNoopRestriction__from_parameters__empty():
+def test__LegacyNoopRestriction__from_parameters():
     assert (
-        restrictions.LegacyNoopRestriction.from_parameters()
+        restrictions.LegacyNoopRestriction.from_parameters(legacy_noop=True)
         == restrictions.LegacyNoopRestriction()
     )
 
 
-def test__LegacyNoopRestriction__from_parameters__not_empty():
+def test__LegacyNoopRestriction__from_parameters__other_params():
     assert restrictions.LegacyNoopRestriction.from_parameters(a=1) is None
 
 
@@ -118,21 +118,22 @@ def test__LegacyNoopRestriction__from_parameters__not_empty():
     [
         (
             {"version": 1, "permissions": {"projects": []}},
-            restrictions.LegacyProjectsRestriction(projects=[]),
+            restrictions.LegacyProjectNamesRestriction(project_names=[]),
         ),
         (
             {"version": 1, "permissions": {"projects": ["a"]}},
-            restrictions.LegacyProjectsRestriction(projects=["a"]),
+            restrictions.LegacyProjectNamesRestriction(project_names=["a"]),
         ),
         (
             {"version": 1, "permissions": {"projects": ["a", "b"]}},
-            restrictions.LegacyProjectsRestriction(projects=["a", "b"]),
+            restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"]),
         ),
     ],
 )
-def test__LegacyProjectsRestriction__load_value__pass(value, restriction):
+def test__LegacyProjectNamesRestriction__load_value__pass(value, restriction):
     assert (
-        restrictions.LegacyProjectsRestriction._load_value(value=value) == restriction
+        restrictions.LegacyProjectNamesRestriction._load_value(value=value)
+        == restriction
     )
 
 
@@ -151,44 +152,50 @@ def test__LegacyProjectsRestriction__load_value__pass(value, restriction):
         {"version": 1, "permissions": {"projects": ["a"], "additional": "key"}},
     ],
 )
-def test__LegacyProjectsRestriction__load_value__fail(value):
+def test__LegacyProjectNamesRestriction__load_value__fail(value):
     with pytest.raises(exceptions.LoaderError):
-        restrictions.LegacyProjectsRestriction._load_value(value=value)
+        restrictions.LegacyProjectNamesRestriction._load_value(value=value)
 
 
-def test__LegacyProjectsRestriction__extract_kwargs():
+def test__LegacyProjectNamesRestriction__extract_kwargs():
     value = {"version": 1, "permissions": {"projects": ["a", "b"]}}
-    kwargs = restrictions.LegacyProjectsRestriction._extract_kwargs(value=value)
-    assert kwargs == {"projects": ["a", "b"]}
+    kwargs = restrictions.LegacyProjectNamesRestriction._extract_kwargs(value=value)
+    assert kwargs == {"project_names": ["a", "b"]}
 
 
-def test__LegacyProjectsRestriction__check__pass():
-    restriction = restrictions.LegacyProjectsRestriction(projects=["a", "b"])
-    assert restriction.check(context=restrictions.Context(project="a")) is None
+def test__LegacyProjectNamesRestriction__check__pass():
+    restriction = restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
+    assert restriction.check(context=restrictions.Context(project_name="a")) is None
 
 
-def test__LegacyProjectsRestriction__check__fail():
-    restriction = restrictions.LegacyProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectNamesRestriction__check__fail():
+    restriction = restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
     with pytest.raises(exceptions.ValidationError):
-        restriction.check(context=restrictions.Context(project="c"))
+        restriction.check(context=restrictions.Context(project_name="c"))
 
 
-def test__LegacyProjectsRestriction__dump():
-    restriction = restrictions.LegacyProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectNamesRestriction__check__missing_context():
+    restriction = restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
+    with pytest.raises(exceptions.MissingContextError):
+        restriction.check(context=restrictions.Context())
+
+
+def test__LegacyProjectNamesRestriction__dump():
+    restriction = restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
     assert restriction.dump() == {
         "version": 1,
         "permissions": {"projects": ["a", "b"]},
     }
 
 
-def test__LegacyProjectsRestriction__from_parameters__empty():
-    assert restrictions.LegacyProjectsRestriction.from_parameters() is None
+def test__LegacyProjectNamesRestriction__from_parameters__empty():
+    assert restrictions.LegacyProjectNamesRestriction.from_parameters() is None
 
 
-def test__LegacyProjectsRestriction__from_parameters__not_empty():
-    assert restrictions.LegacyProjectsRestriction.from_parameters(
-        projects=["a", "b"]
-    ) == restrictions.LegacyProjectsRestriction(projects=["a", "b"])
+def test__LegacyProjectNamesRestriction__from_parameters__not_empty():
+    assert restrictions.LegacyProjectNamesRestriction.from_parameters(
+        legacy_project_names=["a", "b"]
+    ) == restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
 
 
 def test__LegacyDateRestriction__load_value__pass():
@@ -224,10 +231,7 @@ def test__LegacyDateRestriction__check__pass():
     restriction = restrictions.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
     )
-    assert (
-        restriction.check(context=restrictions.Context(project="a", now=1_234_567_895))
-        is None
-    )
+    assert restriction.check(context=restrictions.Context(now=1_234_567_895)) is None
 
 
 @pytest.mark.parametrize(
@@ -242,7 +246,7 @@ def test__LegacyDateRestriction__check__fail(value):
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
     )
     with pytest.raises(exceptions.ValidationError):
-        restriction.check(context=restrictions.Context(project="a", now=value))
+        restriction.check(context=restrictions.Context(now=value))
 
 
 def test__LegacyDateRestriction__dump():
@@ -262,34 +266,34 @@ def test__LegacyDateRestriction__from_parameters__empty():
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"not_before": 1_234_567_890},
-        {"not_after": 1_234_567_900},
+        {"legacy_not_before": 1_234_567_890},
+        {"legacy_not_after": 1_234_567_900},
         {
-            "not_before": datetime.datetime(2000, 1, 1),
-            "not_after": datetime.datetime(2100, 1, 1),
+            "legacy_not_before": datetime.datetime(2000, 1, 1),
+            "legacy_not_after": datetime.datetime(2100, 1, 1),
         },
     ],
 )
 def test__LegacyDateRestriction__from_parameters__fail(kwargs):
     with pytest.raises(exceptions.InvalidRestriction):
-        assert restrictions.LegacyDateRestriction.from_parameters(**kwargs) is None
+        restrictions.LegacyDateRestriction.from_parameters(**kwargs)
 
 
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
         (
-            {"not_before": 1_234_567_890, "not_after": 1_234_567_900},
+            {"legacy_not_before": 1_234_567_890, "legacy_not_after": 1_234_567_900},
             restrictions.LegacyDateRestriction._load_value(
                 value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
             ),
         ),
         (
             {
-                "not_before": datetime.datetime(
+                "legacy_not_before": datetime.datetime(
                     2000, 1, 1, tzinfo=datetime.timezone.utc
                 ),
-                "not_after": datetime.datetime(
+                "legacy_not_after": datetime.datetime(
                     2100, 1, 1, tzinfo=datetime.timezone.utc
                 ),
             },
@@ -301,16 +305,6 @@ def test__LegacyDateRestriction__from_parameters__fail(kwargs):
 )
 def test__LegacyDateRestriction__from_parameters__ok(kwargs, expected):
     assert restrictions.LegacyDateRestriction.from_parameters(**kwargs) == expected
-
-
-def test__Restriction__get_subclasses():
-    # This test ensures we didn't forget to add new restriction classes to
-    # the set.
-    assert set(restrictions.Restriction._get_subclasses()) == {
-        cls
-        for cls in restrictions.Restriction.__subclasses__()
-        if cls.__module__ == "pypitoken.restrictions"
-    }
 
 
 def test__Restriction__json_load_caveat__pass():
@@ -335,7 +329,7 @@ def test__Restriction__json_load_caveat__fail():
         ),
         (
             {"version": 1, "permissions": {"projects": ["a", "b"]}},
-            restrictions.LegacyProjectsRestriction(projects=["a", "b"]),
+            restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"]),
         ),
     ],
 )
@@ -362,10 +356,419 @@ def test__Restriction__load_json():
 def test__Restriction__restrictions_from_parameters():
     restriction_objs = list(
         restrictions.Restriction.restrictions_from_parameters(
-            projects=["a", "b"], not_before=1, not_after=5
+            legacy_project_names=["a", "b"], legacy_not_before=1, legacy_not_after=5
         )
     )
     assert restriction_objs == [
-        restrictions.LegacyProjectsRestriction(projects=["a", "b"]),
+        restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"]),
         restrictions.LegacyDateRestriction(not_before=1, not_after=5),
     ]
+
+
+def test__DateRestriction__load_value__pass():
+    assert restrictions.DateRestriction._load_value(
+        value=[0, 1_234_567_890, 1_234_567_900]
+    ) == restrictions.DateRestriction(not_before=1_234_567_890, not_after=1_234_567_900)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        [],
+        [1, 1_234_567_890, 1_234_567_900],
+        [0],
+        [0, 1_234_567_890],
+        [0, 1_234_567_890, 1_234_567_900, 1_234_567_999],
+        [0, "1_234_567_890", "1_234_567_900"],
+        [0, "2000-01-01 00:00:00", "2000-01-02 00:00:00"],
+    ],
+)
+def test__DateRestriction__load_value__fail(value):
+    with pytest.raises(exceptions.LoaderError):
+        restrictions.DateRestriction._load_value(value=value)
+
+
+def test__DateRestriction__extract_kwargs():
+    value = [0, 1_234_567_890, 1_234_567_900]
+    kwargs = restrictions.DateRestriction._extract_kwargs(value=value)
+    assert kwargs == {"not_before": 1_234_567_890, "not_after": 1_234_567_900}
+
+
+def test__DateRestriction__check__pass():
+    restriction = restrictions.DateRestriction(
+        not_before=1_234_567_890, not_after=1_234_567_900
+    )
+    assert restriction.check(context=restrictions.Context(now=1_234_567_895)) is None
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1_234_567_000,
+        1_234_568_000,
+    ],
+)
+def test__DateRestriction__check__fail(value):
+    restriction = restrictions.DateRestriction(
+        not_before=1_234_567_890, not_after=1_234_567_900
+    )
+    with pytest.raises(exceptions.ValidationError):
+        restriction.check(context=restrictions.Context(now=value))
+
+
+def test__DateRestriction__dump():
+    restriction = restrictions.DateRestriction(
+        not_before=1_234_567_890, not_after=1_234_567_900
+    )
+    assert restriction.dump() == [0, 1_234_567_890, 1_234_567_900]
+
+
+def test__DateRestriction__from_parameters__empty():
+    assert restrictions.DateRestriction.from_parameters() is None
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"not_before": 1_234_567_890},
+        {"not_after": 1_234_567_900},
+        {  # tz-naive
+            "not_before": datetime.datetime(2000, 1, 1),
+            "not_after": datetime.datetime(2100, 1, 1),
+        },
+    ],
+)
+def test__DateRestriction__from_parameters__fail(kwargs):
+    with pytest.raises(exceptions.InvalidRestriction):
+        restrictions.DateRestriction.from_parameters(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        (
+            {"not_before": 1_234_567_890, "not_after": 1_234_567_900},
+            restrictions.DateRestriction(
+                not_before=1_234_567_890, not_after=1_234_567_900
+            ),
+        ),
+        (
+            {
+                "not_before": datetime.datetime(
+                    2000, 1, 1, tzinfo=datetime.timezone.utc
+                ),
+                "not_after": datetime.datetime(
+                    2100, 1, 1, tzinfo=datetime.timezone.utc
+                ),
+            },
+            restrictions.DateRestriction(
+                not_before=946_684_800, not_after=4_102_444_800
+            ),
+        ),
+    ],
+)
+def test__DateRestriction__from_parameters__ok(kwargs, expected):
+    assert restrictions.DateRestriction.from_parameters(**kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    "value, restriction",
+    [
+        (
+            [1, []],
+            restrictions.ProjectNamesRestriction(project_names=[]),
+        ),
+        (
+            [1, ["a"]],
+            restrictions.ProjectNamesRestriction(project_names=["a"]),
+        ),
+        (
+            [1, ["a", "b"]],
+            restrictions.ProjectNamesRestriction(project_names=["a", "b"]),
+        ),
+        (
+            [1, ["a", "aa", "a-a", "aaa--aaa"]],
+            restrictions.ProjectNamesRestriction(
+                project_names=["a", "aa", "a-a", "aaa--aaa"]
+            ),
+        ),
+    ],
+)
+def test__ProjectNamesRestriction__load_value__pass(value, restriction):
+    assert restrictions.ProjectNamesRestriction._load_value(value=value) == restriction
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        [],
+        [0, ["a"]],
+        [1, ["a"], ["a"]],
+        [1, "a"],
+        [1, [1]],
+        [1, ["a", 1]],
+    ],
+)
+def test__ProjectNamesRestriction__load_value__fail(value):
+    with pytest.raises(exceptions.LoaderError):
+        restrictions.ProjectNamesRestriction._load_value(value=value)
+
+
+def test__ProjectNamesRestriction__extract_kwargs():
+    value = [1, ["a", "b"]]
+    kwargs = restrictions.ProjectNamesRestriction._extract_kwargs(value=value)
+    assert kwargs == {"project_names": ["a", "b"]}
+
+
+def test__ProjectNamesRestriction__check__pass():
+    restriction = restrictions.ProjectNamesRestriction(project_names=["a", "b"])
+    assert restriction.check(context=restrictions.Context(project_name="a")) is None
+
+
+def test__ProjectNamesRestriction__check__fail():
+    restriction = restrictions.ProjectNamesRestriction(project_names=["a", "b"])
+    with pytest.raises(exceptions.ValidationError):
+        restriction.check(context=restrictions.Context(project_name="c"))
+
+
+def test__ProjectNamesRestriction__check__missing_context():
+    restriction = restrictions.ProjectNamesRestriction(project_names=["a", "b"])
+    with pytest.raises(exceptions.MissingContextError):
+        restriction.check(context=restrictions.Context())
+
+
+def test__ProjectNamesRestriction__dump():
+    restriction = restrictions.ProjectNamesRestriction(project_names=["a", "b"])
+    assert restriction.dump() == [1, ["a", "b"]]
+
+
+def test__ProjectNamesRestriction__from_parameters__empty():
+    assert restrictions.ProjectNamesRestriction.from_parameters() is None
+
+
+def test__ProjectNamesRestriction__from_parameters__not_empty():
+    assert restrictions.ProjectNamesRestriction.from_parameters(
+        project_names=["a", "b"]
+    ) == restrictions.ProjectNamesRestriction(project_names=["a", "b"])
+
+
+@pytest.mark.parametrize(
+    "value, restriction",
+    [
+        (
+            [2, []],
+            restrictions.ProjectIDsRestriction(project_ids=[]),
+        ),
+        (
+            [2, ["00000000-0000-0000-0000-000000000000"]],
+            restrictions.ProjectIDsRestriction(
+                project_ids=["00000000-0000-0000-0000-000000000000"]
+            ),
+        ),
+        (
+            [
+                2,
+                [
+                    "00000000-0000-0000-0000-000000000000",
+                    "00000000-0000-0000-0000-000000000001",
+                ],
+            ],
+            restrictions.ProjectIDsRestriction(
+                project_ids=[
+                    "00000000-0000-0000-0000-000000000000",
+                    "00000000-0000-0000-0000-000000000001",
+                ]
+            ),
+        ),
+    ],
+)
+def test__ProjectIDsRestriction__load_value__pass(value, restriction):
+    assert restrictions.ProjectIDsRestriction._load_value(value=value) == restriction
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        [],
+        [0, ["00000000-0000-0000-0000-000000000000"]],
+        [
+            2,
+            ["00000000-0000-0000-0000-000000000000"],
+            ["00000000-0000-0000-0000-000000000001"],
+        ],
+        [2, "00000000-0000-0000-0000-000000000000"],
+        [2, [1]],
+        [2, ["00000000-0000-0000-0000-000000000000", 1]],
+    ],
+)
+def test__ProjectIDsRestriction__load_value__fail(value):
+    with pytest.raises(exceptions.LoaderError):
+        restrictions.ProjectIDsRestriction._load_value(value=value)
+
+
+def test__ProjectIDsRestriction__extract_kwargs():
+    value = [2, ["00000000-0000-0000-0000-000000000000"]]
+    kwargs = restrictions.ProjectIDsRestriction._extract_kwargs(value=value)
+    assert kwargs == {"project_ids": ["00000000-0000-0000-0000-000000000000"]}
+
+
+def test__ProjectIDsRestriction__check__pass():
+    restriction = restrictions.ProjectIDsRestriction(
+        project_ids=["00000000-0000-0000-0000-000000000000"]
+    )
+    assert (
+        restriction.check(
+            context=restrictions.Context(
+                project_id="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        is None
+    )
+
+
+def test__ProjectIDsRestriction__check__fail():
+    restriction = restrictions.ProjectIDsRestriction(
+        project_ids=[
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+    )
+    with pytest.raises(exceptions.ValidationError):
+
+        restriction.check(
+            context=restrictions.Context(
+                project_id="00000000-0000-0000-0000-000000000002"
+            )
+        )
+
+
+def test__ProjectIDsRestriction__check__missing_context():
+    restriction = restrictions.ProjectIDsRestriction(
+        project_ids=["00000000-0000-0000-0000-000000000000"]
+    )
+    with pytest.raises(exceptions.MissingContextError):
+        restriction.check(context=restrictions.Context())
+
+
+def test__ProjectIDsRestriction__dump():
+    restriction = restrictions.ProjectIDsRestriction(
+        project_ids=[
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+    )
+    assert restriction.dump() == [
+        2,
+        [
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ],
+    ]
+
+
+def test__ProjectIDsRestriction__from_parameters__empty():
+    assert restrictions.ProjectIDsRestriction.from_parameters() is None
+
+
+def test__ProjectIDsRestriction__from_parameters__not_empty():
+    assert restrictions.ProjectIDsRestriction.from_parameters(
+        project_ids=[
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+    ) == restrictions.ProjectIDsRestriction(
+        project_ids=[
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "value, restriction",
+    [
+        (
+            [3, "00000000-0000-0000-0000-000000000000"],
+            restrictions.UserIDRestriction(
+                user_id="00000000-0000-0000-0000-000000000000"
+            ),
+        ),
+    ],
+)
+def test__UserIDRestriction__load_value__pass(value, restriction):
+    assert restrictions.UserIDRestriction._load_value(value=value) == restriction
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        [],
+        [0, "00000000-0000-0000-0000-000000000000"],
+        [3],
+        [
+            3,
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+        ],
+        [3, "aaaaa"],
+        [3, "01"],
+    ],
+)
+def test__UserIDRestriction__load_value__fail(value):
+    with pytest.raises(exceptions.LoaderError):
+        restrictions.UserIDRestriction._load_value(value=value)
+
+
+def test__UserIDRestriction__extract_kwargs():
+    value = [3, "00000000-0000-0000-0000-000000000000"]
+    kwargs = restrictions.UserIDRestriction._extract_kwargs(value=value)
+    assert kwargs == {"user_id": "00000000-0000-0000-0000-000000000000"}
+
+
+def test__UserIDRestriction__check__pass():
+    restriction = restrictions.UserIDRestriction(
+        user_id="00000000-0000-0000-0000-000000000000"
+    )
+    assert (
+        restriction.check(
+            context=restrictions.Context(user_id="00000000-0000-0000-0000-000000000000")
+        )
+        is None
+    )
+
+
+def test__UserIDRestriction__check__fail():
+    restriction = restrictions.UserIDRestriction(
+        user_id="00000000-0000-0000-0000-000000000000"
+    )
+    with pytest.raises(exceptions.ValidationError):
+
+        restriction.check(
+            context=restrictions.Context(user_id="00000000-0000-0000-0000-000000000002")
+        )
+
+
+def test__UserIDRestriction__check__missing_context():
+    restriction = restrictions.UserIDRestriction(
+        user_id="00000000-0000-0000-0000-000000000000"
+    )
+    with pytest.raises(exceptions.MissingContextError):
+
+        restriction.check(context=restrictions.Context())
+
+
+def test__UserIDRestriction__dump():
+    restriction = restrictions.UserIDRestriction(
+        user_id="00000000-0000-0000-0000-000000000000"
+    )
+    assert restriction.dump() == [3, "00000000-0000-0000-0000-000000000000"]
+
+
+def test__UserIDRestriction__from_parameters__empty():
+    assert restrictions.UserIDRestriction.from_parameters() is None
+
+
+def test__UserIDRestriction__from_parameters__not_empty():
+    assert restrictions.UserIDRestriction.from_parameters(
+        user_id="00000000-0000-0000-0000-000000000000"
+    ) == restrictions.UserIDRestriction(user_id="00000000-0000-0000-0000-000000000000")

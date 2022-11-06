@@ -4,14 +4,14 @@ import dataclasses
 import datetime
 import json
 import time
-from typing import Any, Iterable, TypeVar
+from typing import Any, ClassVar, Iterable, TypeVar
 
 import jsonschema
 
-from pypitoken import exceptions, utils
+from pypitoken import exceptions
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(init=False)
 class Context:
     """
     Describe the circumstances sourrounding how the bearer is attempting to use
@@ -20,17 +20,43 @@ class Context:
 
     Parameters
     ----------
-    project :
+    project_name :
         Normalized name of the project the bearer is attempting to upload to
+    project_id :
+        ID of the project the bearer is attempting to upload to
+    user_id :
+        ID of the user that is attempting to upload
+    now :
+        timestamp of the current time, to check date/time-related restrictions.
+        Defaults to now.
     """
 
-    project_name: str
-    project_id: str
-    user_id: str
-    now: int = dataclasses.field(default_factory=lambda: int(time.time()))
+    # It's expected that no attribute has a default value. Defaults are encoded
+    # in __init__ (that's all because the initial values don't match the attribute
+    # types)
+    project_name: str | None
+    project_id: str | None
+    user_id: str | None
+    now: int
+
+    def __init__(
+        self,
+        project_name: str | None = None,
+        project_id: str | None = None,
+        user_id: str | None = None,
+        now: int | datetime.datetime | None = None,
+    ):
+        self.project_name = project_name
+        self.project_id = project_id
+        self.user_id = user_id
+
+        if now is None:
+            self.now = int(time.time())
+        else:
+            self.now = timestamp_from_parameter(now)
 
 
-T = TypeVar("T", bound="Restriction")
+TR = TypeVar("TR", bound="Restriction")
 
 
 # Making the class a dataclass is mainly meant to ease comparison using ==
@@ -42,6 +68,8 @@ class Restriction:
     Expose lower-level methods for restriction/caveat introspection.
     """
 
+    needs_context: ClassVar[list[str]] = []
+
     @staticmethod
     def _get_schema() -> dict:
         """
@@ -51,7 +79,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def _load_value(cls: type[T], value: dict) -> T:
+    def _load_value(cls: type[TR], value: dict) -> TR:
         """
         Create a Restriction from the JSON value stored in the caveat
 
@@ -64,6 +92,8 @@ class Restriction:
         -------
         Restriction
         """
+        schema = cls._get_schema()
+        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
         try:
             jsonschema.validate(
                 instance=value,
@@ -82,7 +112,16 @@ class Restriction:
         # We could use __subclasses__ but that could lead to all kinds of funky things,
         # especially in a security-sensistive library.
         # Tests will check this against Restriction subclasses though.
-        return [LegacyNoopRestriction, LegacyProjectsRestriction, LegacyDateRestriction]
+        return [
+            DateRestriction,
+            ProjectNamesRestriction,
+            ProjectIDsRestriction,
+            UserIDRestriction,
+            # Legacy
+            LegacyNoopRestriction,
+            LegacyProjectNamesRestriction,
+            LegacyDateRestriction,
+        ]
 
     @staticmethod
     def _json_load_caveat(caveat: str) -> Any:
@@ -135,7 +174,7 @@ class Restriction:
         return cls.load(caveat=caveat_obj)
 
     @classmethod
-    def _extract_kwargs(cls, value: dict) -> dict:
+    def _extract_kwargs(cls, value: Any) -> dict:
         """
         Receive the parsed JSON value of a caveat for which the schema has been
         validated. Return the instantiation kwargs (``__init__`` parameters).
@@ -143,17 +182,11 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def from_parameters(cls: type[T], **kwargs) -> T | None:
+    def from_parameters(cls: type[TR], **kwargs) -> TR | None:
         """
         Constructs an instance from the parameters passed to `Token.restrict`
         """
         raise NotImplementedError
-
-    @classmethod
-    def restriction_parameters(cls):
-        return utils.merge_parameters(
-            *(subclass.from_parameters for subclass in cls._get_subclasses())
-        )
 
     @classmethod
     def restrictions_from_parameters(cls, **kwargs) -> Iterable[Restriction]:
@@ -179,10 +212,19 @@ class Restriction:
         ------
         `ValidationError`
             Restriction was checked and appeared unmet.
+        `MissingContextError`
+            (a subclass of ValidationError): Restriction is unmet because the
+            context is lacking required values. This is more probably a code issue
+            from the `Token.check` call than an issue with the token itself,
+            though it also means that the token should be rejected.
         """
-        raise NotImplementedError
+        for need in self.needs_context:
+            if getattr(context, need) is None:
+                raise exceptions.MissingContextError(
+                    "The restriction couldn't be checked because the context is missing required values"
+                )
 
-    def dump(self) -> dict:
+    def dump(self) -> dict | list:
         """
         Transform a restriction into a JSON-compatible dict object
         """
@@ -193,6 +235,273 @@ class Restriction:
         Transform a restriction into a JSON-encoded string
         """
         return json.dumps(self.dump())
+
+
+@dataclasses.dataclass
+class DateRestriction(Restriction):
+    """
+    Restrict a `Token` to a single time interval.
+
+    Attributes
+    ----------
+    not_before :
+        Token is not to be used before this Unix timestamp.
+    not_after :
+        Token is not to be used after this Unix timestamp.
+    """
+
+    not_before: int
+    not_after: int
+    # https://github.com/pypi/warehouse/blob/606bce63472a7979eff0a37ea8c44c335b9c118f/warehouse/macaroons/caveats/__init__.py#L41
+    tag: ClassVar[int] = 0
+    needs_context: ClassVar[list[str]] = ["now"]
+
+    @classmethod
+    def _get_schema(cls) -> dict:
+        return {
+            "type": "array",
+            "prefixItems": [
+                {"type": "integer", "const": cls.tag},
+                {"type": "integer"},
+                {"type": "integer"},
+            ],
+            "items": False,
+            "minItems": 3,
+            "maxItems": 3,
+        }
+
+    @classmethod
+    def _extract_kwargs(cls, value: list) -> dict:
+        return {
+            "not_before": value[1],
+            "not_after": value[2],
+        }
+
+    def dump(self) -> list:
+        return [self.tag, self.not_before, self.not_after]
+
+    def check(self, context: Context) -> None:
+        super().check(context=context)
+        now: int = context.now
+
+        if not self.not_before <= now < self.not_after:
+            raise exceptions.ValidationError(
+                f"This token can only be used between timestamps "
+                f"{self.not_before} (incl) and {self.not_after} (excl). "
+                f"Received: {now}"
+            )
+
+    @classmethod
+    def from_parameters(
+        cls,
+        not_before: int | datetime.datetime | None = None,
+        not_after: int | datetime.datetime | None = None,
+        **kwargs,
+    ) -> DateRestriction | None:
+        if not (not_before or not_after):
+            return None
+
+        if not (not_before and not_after):
+            raise exceptions.InvalidRestriction(
+                "`not_before` and `not_after` parameters must be used together. "
+                "Either define both or neither. "
+                f"Received not_before={not_before} and not_after={not_after}"
+            )
+        return cls(
+            not_before=timestamp_from_parameter(not_before),
+            not_after=timestamp_from_parameter(not_after),
+        )
+
+
+@dataclasses.dataclass
+class ProjectNamesRestriction(Restriction):
+    """
+    Restrict a `Token` to uploading releases for project with specific names.
+
+    Attributes
+    ----------
+    project_names :
+        Normalized project names this token may upload to.
+    """
+
+    project_names: list[str]
+    # https://github.com/pypi/warehouse/blob/606bce63472a7979eff0a37ea8c44c335b9c118f/warehouse/macaroons/caveats/__init__.py#L54
+    tag: ClassVar[int] = 1
+    needs_context: ClassVar[list[str]] = ["project_name"]
+
+    @classmethod
+    def _get_schema(cls) -> dict:
+        return {
+            "type": "array",
+            "prefixItems": [
+                {"type": "integer", "const": cls.tag},
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        # Regex from https://peps.python.org/pep-0426/#name
+                        # with normalization rule from
+                        # https://peps.python.org/pep-0503/#normalized-names
+                        "pattern": r"^([a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])$",
+                    },
+                },
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": False,
+        }
+
+    @classmethod
+    def _extract_kwargs(cls, value: list) -> dict:
+        return {"project_names": value[1]}
+
+    def dump(self) -> list:
+        return [self.tag, self.project_names]
+
+    def check(self, context: Context) -> None:
+        super().check(context=context)
+        project_name = context.project_name
+
+        if project_name not in self.project_names:
+            raise exceptions.ValidationError(
+                f"This token can only be used for project(s): "
+                f"{', '.join(self.project_names)}. Received: {project_name}"
+            )
+
+    @classmethod
+    def from_parameters(
+        cls,
+        project_names: list[str] | None = None,
+        **kwargs,
+    ) -> ProjectNamesRestriction | None:
+        if project_names is not None:
+            return cls(project_names=project_names)
+        return None
+
+
+@dataclasses.dataclass
+class ProjectIDsRestriction(Restriction):
+    """
+    Restrict a `Token` to uploading releases for project with specific IDs.
+
+    Attributes
+    ----------
+    project_ids :
+        Project IDs this token may upload to.
+    """
+
+    project_ids: list[str]
+    # https://github.com/pypi/warehouse/blob/606bce63472a7979eff0a37ea8c44c335b9c118f/warehouse/macaroons/caveats/__init__.py#L71
+    tag: ClassVar[int] = 2
+    needs_context: ClassVar[list[str]] = ["project_id"]
+
+    @classmethod
+    def _get_schema(cls) -> dict:
+        return {
+            "type": "array",
+            "prefixItems": [
+                {"type": "integer", "const": cls.tag},
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        # Uppercase UUIDs are not accepted
+                        "pattern": r"^[0-9a-f]{8}\b-[0-9a-f]{4}\b-[0-9a-f]{4}\b-[0-9a-f]{4}\b-[0-9a-f]{12}$",
+                    },
+                },
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": False,
+        }
+
+    @classmethod
+    def _extract_kwargs(cls, value: list) -> dict:
+        return {"project_ids": value[1]}
+
+    def dump(self) -> list:
+        return [self.tag, self.project_ids]
+
+    def check(self, context: Context) -> None:
+        super().check(context=context)
+        project_id = context.project_id
+
+        if project_id not in self.project_ids:
+            raise exceptions.ValidationError(
+                f"This token can only be used for project(s): "
+                f"{', '.join(self.project_ids)}. Received: {project_id}"
+            )
+
+    @classmethod
+    def from_parameters(
+        cls,
+        project_ids: list[str] | None = None,
+        **kwargs,
+    ) -> ProjectIDsRestriction | None:
+        if project_ids is not None:
+            return cls(project_ids=project_ids)
+        return None
+
+
+@dataclasses.dataclass
+class UserIDRestriction(Restriction):
+    """
+    Restrict a `Token` to being used by the user with the corresponding ID.
+
+    Attributes
+    ----------
+    user_id :
+        ID of the user that may use this token.
+    """
+
+    user_id: str
+    # https://github.com/pypi/warehouse/blob/606bce63472a7979eff0a37ea8c44c335b9c118f/warehouse/macaroons/caveats/__init__.py#L88
+    tag: ClassVar[int] = 3
+    needs_context: ClassVar[list[str]] = ["user_id"]
+
+    @classmethod
+    def _get_schema(cls) -> dict:
+        return {
+            "type": "array",
+            "prefixItems": [
+                {"type": "integer", "const": cls.tag},
+                {
+                    "type": "string",
+                    # Uppercase ID is not accepted
+                    "pattern": r"^[0-9a-f]{8}\b-[0-9a-f]{4}\b-[0-9a-f]{4}\b-[0-9a-f]{4}\b-[0-9a-f]{12}$",
+                },
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": False,
+        }
+
+    @classmethod
+    def _extract_kwargs(cls, value: list) -> dict:
+        return {"user_id": value[1]}
+
+    def dump(self) -> list:
+        return [self.tag, self.user_id]
+
+    def check(self, context: Context) -> None:
+        super().check(context=context)
+        user_id = context.user_id
+
+        if user_id != self.user_id:
+            raise exceptions.ValidationError(
+                f"This token can only be used by user with id: "
+                f"{self.user_id}. Received: {user_id}"
+            )
+
+    @classmethod
+    def from_parameters(
+        cls,
+        user_id: str | None = None,
+        **kwargs,
+    ) -> UserIDRestriction | None:
+        if user_id is not None:
+            return cls(user_id=user_id)
+        return None
 
 
 @dataclasses.dataclass
@@ -218,6 +527,7 @@ class LegacyNoopRestriction(Restriction):
         return {}
 
     def check(self, context: Context) -> None:
+        super().check(context=context)
         # Always passes
         return
 
@@ -236,7 +546,7 @@ class LegacyNoopRestriction(Restriction):
 
 
 @dataclasses.dataclass
-class LegacyProjectsRestriction(Restriction):
+class LegacyProjectNamesRestriction(Restriction):
     """
     Restrict a `Token` to uploading releases for a specific set of packages.
 
@@ -247,6 +557,7 @@ class LegacyProjectsRestriction(Restriction):
     """
 
     project_names: list[str]
+    needs_context: ClassVar[list[str]] = ["project_name"]
 
     @staticmethod
     def _get_schema() -> dict:
@@ -275,12 +586,13 @@ class LegacyProjectsRestriction(Restriction):
         return {"version": 1, "permissions": {"projects": self.project_names}}
 
     def check(self, context: Context) -> None:
-        project = context.project_name
+        super().check(context=context)
+        project_name = context.project_name
 
-        if project not in self.project_names:
+        if project_name not in self.project_names:
             raise exceptions.ValidationError(
                 f"This token can only be used for project(s): "
-                f"{', '.join(self.project_names)}. Received: {project}"
+                f"{', '.join(self.project_names)}. Received: {project_name}"
             )
 
     @classmethod
@@ -288,7 +600,7 @@ class LegacyProjectsRestriction(Restriction):
         cls,
         legacy_project_names: list[str] | None = None,
         **kwargs,
-    ) -> LegacyProjectsRestriction | None:
+    ) -> LegacyProjectNamesRestriction | None:
         if legacy_project_names is not None:
             return cls(project_names=legacy_project_names)
         return None
@@ -310,6 +622,7 @@ class LegacyDateRestriction(Restriction):
 
     not_before: int
     not_after: int
+    needs_context: ClassVar[list[str]] = ["now"]
 
     @staticmethod
     def _get_schema() -> dict:
@@ -334,6 +647,7 @@ class LegacyDateRestriction(Restriction):
         return {"nbf": self.not_before, "exp": self.not_after}
 
     def check(self, context: Context) -> None:
+        super().check(context=context)
         now: int = context.now
 
         if not self.not_before <= now < self.not_after:
@@ -346,8 +660,8 @@ class LegacyDateRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        legacy_not_before: datetime.datetime | int | None = None,
-        legacy_not_after: datetime.datetime | int | None = None,
+        legacy_not_before: int | datetime.datetime | None = None,
+        legacy_not_after: int | datetime.datetime | None = None,
         **kwargs,
     ) -> LegacyDateRestriction | None:
         if legacy_not_before or legacy_not_after:
@@ -365,9 +679,9 @@ class LegacyDateRestriction(Restriction):
         return None
 
 
-def timestamp_from_parameter(param: datetime.datetime | int) -> int:
+def timestamp_from_parameter(param: int | datetime.datetime) -> int:
     if isinstance(param, int):
-        return param
+        return int(param)
     # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
     naive = param.tzinfo is None or param.tzinfo.utcoffset(param) is None
     if naive:

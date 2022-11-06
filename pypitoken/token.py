@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import datetime
 import functools
-from typing import Any
 
 import pymacaroons
+from typing_extensions import ParamSpec
 
-from pypitoken import exceptions, restrictions, utils
+from pypitoken import exceptions, restrictions
 
 PREFIX = "pypi"
+
+P = ParamSpec("P")
 
 
 class Token:
@@ -145,14 +148,26 @@ class Token:
         token = cls(prefix=prefix, macaroon=macaroon)
         return token
 
-    def restrict(self, **kwargs) -> Token:
+    def restrict(
+        self,
+        not_before: int | datetime.datetime | None = None,
+        not_after: int | datetime.datetime | None = None,
+        project_names: list[str] | None = None,
+        project_ids: list[str] | None = None,
+        user_id: str | None = None,
+        # Legacy params
+        legacy_project_names: list[str] | None = None,
+        legacy_not_before: int | datetime.datetime | None = None,
+        legacy_not_after: int | datetime.datetime | None = None,
+        legacy_noop: bool | None = None,
+    ) -> Token:
         """
         Modifies the token in-place to add restrictions to it. This can be called by
         PyPI as well as by anyone, adding restrictions to new or existing tokens.
 
-        Note that if no parameter is passed, and the token has no other restrictions
-        already, this method will still add a noop restriction, to match the original
-        implementation.
+        Multiple restrictions of different types can be added in one call to
+        `restrict()`. Alternatively, multiple restrictions of the same type can be added
+        via multiple calls to `restrict()`.
 
         Note: a token allows the owner to delegate their rights to the bearer.
         Consequently, a token adding restrictions linked to a project that the owner
@@ -163,15 +178,42 @@ class Token:
 
         Parameters
         ----------
-        projects :
-            Restrict the token to uploading releases only for projects with these
-            normalized names, by default None (no restriction)
+
         not_before :
-            Restrict the token to uploading releases only after the given timestamp
-            or tz-aware datetime. Must be used with ``not_after``.
+            Restrict the token to uploading releases only after the given timestamp or
+            tz-aware datetime. Must be used with ``not_after``. By default, None (no
+            restriction)
         not_after :
-            Restrict the token to uploading releases only before the given timestamp
-            or tz-aware datetime. Must be used with ``not_before``.
+            Restrict the token to uploading releases only before the given timestamp or
+            tz-aware datetime. Must be used with ``not_before``. By default, None (no
+            restriction)
+        project_names :
+            Restrict the token to uploading releases only for projects with these names,
+            by default None (no restriction)
+        project_ids :
+            Restrict the token to uploading releases only for projects with these ids,
+            by default None (no restriction)
+        user_ids :
+            Restrict the token to uploading user attempting to upload Restrict the token
+            to being used only by user with this id, by default None (no restriction)
+        legacy_not_before :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only after the given timestamp or tz-aware
+            datetime. Must be used with ``not_after``. By default, None (no restriction)
+        legacy_not_after :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only before the given timestamp or tz-aware
+            datetime. Must be used with ``not_before``. By default, None (no
+            restriction)
+        legacy_project_names :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only for projects with these ed name of the
+            project the bearer is attempting to upload toed names, by default None (no
+            restriction)
+        legacy_noop :
+            Uses the legacy restriction format (results in longer token size). user
+            attempting to upload This restriction being there or not doesn't change the
+            validity of the token.
 
         Raises
         ------
@@ -184,7 +226,15 @@ class Token:
             The modified Token, to ease chaining calls.
         """
         for restriction in restrictions.Restriction.restrictions_from_parameters(
-            **kwargs
+            not_before=not_before,
+            not_after=not_after,
+            project_names=project_names,
+            project_ids=project_ids,
+            user_id=user_id,
+            legacy_project_names=legacy_project_names,
+            legacy_not_before=legacy_not_before,
+            legacy_not_after=legacy_not_after,
+            legacy_noop=legacy_noop,
         ):
             self._macaroon.add_first_party_caveat(restriction.dump_json())
 
@@ -205,38 +255,50 @@ class Token:
     def check(
         self,
         key: str | bytes,
-        project: str,
-        now: int | None = None,
+        project_name: str | None = None,
+        project_id: str | None = None,
+        user_id: str | None = None,
+        now: int | datetime.datetime | None = None,
     ) -> None:
         """
         Raises pypitoken.ValidationError if the token is invalid.
 
-        Parameters besides ``key`` will be used to provide the current context
-        this token is used for, allowing to accept or reject the caveat restrictions.
-        If a parameter is not passed, but a caveat using it is encountered, the
-        caveat will not be met, the token will be found invalid, and this method
-        will raise with an appropriate exception.
+        Parameters besides ``key`` are all optional and will be used to provide the
+        current context this token is used for, allowing to accept or reject the caveat
+        restrictions. If a parameter is not passed, but a caveat using it is
+        encountered, the caveat will not be met, the token will be found invalid, and
+        this method will raise with an appropriate exception. There is an exception for
+        ``now``: if not passed, it defaults to the current timestamp.
 
         Parameters
         ----------
         key : str
             Key of the macaroon, stored in PyPI database
-        project : Optional[str], optional
-            Normalized name of the project the bearer is attempting to upload to.
+        project_name :
+            Normalized name of the project the bearer is attempting to upload to
+        project_id :
+            ID of the project the bearer is attempting to upload to
+        user_id :
+            ID of the user attempting to upload
+        now :
+            Timestamp of the moment the upload takes place, or tz-aware datetime.
+            Defaults to the current timestamp.
 
         Raises
         ------
         `pypitoken.ValidationError`
-            Any error in validating the token will be raised as a ValidationError.
-            The original exception (if any) will be attached
-            as the exception cause (``raise from``).
+            Any error in validating the token will be raised as a ValidationError. The
+            original exception (if any) will be attached as the exception cause (``raise
+            from``).
         """
         verifier = pymacaroons.Verifier()
 
-        context_kwargs: dict[str, Any] = {"project": project}
-        if now:
-            context_kwargs["now"] = now
-        context = restrictions.Context(**context_kwargs)
+        context = restrictions.Context(
+            project_name=project_name,
+            project_id=project_id,
+            user_id=user_id,
+            now=now,
+        )
 
         errors: list[Exception] = []
 
@@ -317,8 +379,3 @@ class Token:
             restrictions.Restriction.load_json(caveat=caveat.caveat_id)
             for caveat in self._macaroon.caveats
         ]
-
-
-utils.replace_signature(
-    method=Token.restrict, parameters=restrictions.Restriction.restriction_parameters()
-)
