@@ -25,7 +25,8 @@ dunamai = "*"
 
 [tool.poetry.group.docs.dependencies]
 Sphinx = ">=5"
-sphinx-material = "*"
+furo = "*"
+sphinx-autodoc-typehints = "*"
 sphinx-github-changelog = "*"
 
 [tool.poetry.group.tests.dependencies]
