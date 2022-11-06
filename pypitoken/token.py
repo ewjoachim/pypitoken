@@ -34,7 +34,7 @@ class Token:
         specific user. Even when additional restrictions are added to a token, the
         identifier will still be readable in the token. While this is not exactly
         a secret part of the token, it's best to keep it reasonably private.
-    _macaroon : `pymacarrons.Macaroon`
+    _macaroon : ``pymacarrons.Macaroon``
         This is part of the private API and may be subject to change at any time.
         This gives you access to the underlying Macaroon, if you need to do low-level
         operations, or just want to poke around.
