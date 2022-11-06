@@ -41,7 +41,7 @@ Load your existing token::
 
 Add restrictions, for example restrict it to a given project::
 
-    token.restrict(projects=["sphinx"])
+    token.restrict(project_names=["sphinx"])
 
 See `Token.restrict` for the list of possible restrictions.
 
@@ -87,13 +87,13 @@ without a token. In this case, you can use the methods on the `Restriction` clas
 
     import pypitoken
     restriction = pypitoken.Restriction.load_json(
-        '{"version": 1, "permissions": "user"}'
+        '[0, 1234567890, 1234567891]'
     )
     # or
     restriction = pypitoken.Restriction.load(
-        {"version": 1, "permissions": "user"}
+        [0, 1234567890, 1234567891]
     )
-    # NoopRestriction()
+    # DateRestriction()
 
     print(restriction.dump())  # outputs a dict
     print(restriction.dump_json())  # outputs a json-encoded string
@@ -113,7 +113,9 @@ library only handles the computation part, not the storing part.
 Create a token
 --------------
 
-Use `Token.create`, `Token.restrict`, `Token.dump`::
+Use `Token.create`, `Token.restrict`, `Token.dump`:
+
+.. code-block:: python
 
     import pypitoken
     token = pypitoken.Token.create(
@@ -123,19 +125,23 @@ Use `Token.create`, `Token.restrict`, `Token.dump`::
         prefix="pypi",
     )
 
-    # Use
-    token.restrict()  # user-wide token
-    # Or
-    token.restrict(projects=["project-normalized-name"])  # project-specific token
+    # Restrict the projects that can be uploaded
+    token.restrict(project_names=["project-normalized-name"])  # project-specific token
     # You can also restrict the token in time:
     token.restrict(not_before=timestamp_or_tz_aware_dt, not_after=timestamp_or_tz_aware_dt)
+    # By project ID:
+    token.restrict(project_ids=["00000000-0000-0000-0000-000000000000"])
+    # And by user ID
+    token.restrict(user_id="00000000-0000-0000-0000-000000000001")
 
     token_to_display = token.dump()
 
 Check a token
 -------------
 
-Use `Token.load`, `Token.check`::
+Use `Token.load`, `Token.check`:
+
+.. code-block:: python
 
     import pypitoken
     try:
@@ -145,15 +151,20 @@ Use `Token.load`, `Token.check`::
         return Http403()
 
     try:
-        assert token.domain == "pypi.org", f"Token was generated for the wrong domain ('{token.domain}', expected 'pypi.org')
-        assert token.prefix == "pypi", f"Token has wrong prefix ('{token.prefix}', expected 'pypi')
+        assert token.domain == "pypi.org", f"Token was generated for the wrong domain ('{token.domain}', expected 'pypi.org')"
+        assert token.prefix == "pypi", f"Token has wrong prefix ('{token.prefix}', expected 'pypi')"
     except AssertionError as exc:
         display_error(exc)
         return Http403()
 
     try:
         # The project the user is currently uploading
-        token.check(project="project-normalize-name", now=int(time.time()))
+        token.check(
+            project_name="project-normalize-name",
+            project_id="00000000-0000-0000-0000-000000000000",
+            user_id="00000000-0000-0000-0000-000000000001",
+            now=int(time.time()),
+        )
     except pypitoken.ValidationError:
         display_error(exc)
         return Http403()
@@ -169,3 +180,69 @@ user, this will be considered a ``pypitoken`` bug, feel free to open an issue.
 
 You may omit the ``now`` parameter in the `Token.check` call, it will default
 to the current integer timestamp. That said, it's ok to be explicit.
+
+Version ``6.x`` upgrade
+=======================
+
+Version 6 marks major changes in the API of this module, following a complete
+refactor of macaroons code withing PyPI itself.
+
+Here is the list of things to be aware of:
+
+Changes to legacy restrictions
+------------------------------
+
+- The pre-existing restriction classes have been renamed:
+
+  - ``NoopRestriction`` became `LegacyNoopRestriction`
+
+  - ``ProjectsRestriction`` became `LegacyProjectNamesRestriction`
+
+    - Its parameter that was named ``projects`` is now named ``project_names``
+
+  - ``DateRestriction`` became `LegacyDateRestriction`
+
+- In order to create legacy restrictions from `Token.restrict`, one may now
+  use:
+
+  - ``legacy_noop=True`` instead of nothing for `LegacyNoopRestriction`
+
+  - ``legacy_project_names`` instead of ``projects`` for `LegacyProjectNamesRestriction`
+
+  - ``legacy_not_before`` and ``legacy_not_after``` instead of ``not_before``
+    and ``not_after`` for `LegacyDateRestriction`
+
+Addition of new restrictions
+----------------------------
+
+The following new restrictions have been added, that use the new format:
+
+- `DateRestriction` (works the same as `LegacyDateRestriction`)
+- `ProjectNamesRestriction` (works the same as `LegacyProjectNamesRestriction`)
+- `ProjectIDsRestriction` (validates project ID in a list)
+- `UserIDRestriction` (validates user ID)
+
+Consequently, `Token.check` now accepts 2 new parameters:
+
+- ``project_id``: a string representing the project ID
+- ``user_id``: a string representing the uploading user ID
+
+Other Changes
+-------------
+
+- `Token.check`: The documentation says:
+     If a parameter is not passed, but a caveat using it is encountered, the
+     caveat will not be met, the token will be found invalid, and this method
+     will raise with an appropriate exception.
+
+  This was actually not the case as ``project`` was a mandatory parameter.
+  It's the case now: all perameters except ``key`` are now optional. Not providing
+  one context parameter, but checking a restriction that uses this context parameter
+  will result in a `MissingContextError`, which inherits `ValidationError`.
+  There's a slight exception to this: as before, not providing the ``now``
+  parameter will continue to mean we use the current timestamp as value.
+
+- Internally, ``Restriction`` classes have been moved to ``pypitoken.restrictions``.
+  This will not affect you if you import those classes from the ``pypitoken`` module
+  directly (as you should) but some users load those classes from the internal
+  module directly.

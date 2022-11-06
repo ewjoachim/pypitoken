@@ -1,18 +1,21 @@
-from __future__ import annotations
-
 from .exceptions import (
     InvalidRestriction,
     LoaderError,
+    MissingContextError,
     PyPITokenException,
     ValidationError,
 )
-from .token import (
+from .restrictions import (
     DateRestriction,
-    NoopRestriction,
-    ProjectsRestriction,
+    LegacyDateRestriction,
+    LegacyNoopRestriction,
+    LegacyProjectNamesRestriction,
+    ProjectIDsRestriction,
+    ProjectNamesRestriction,
     Restriction,
-    Token,
+    UserIDRestriction,
 )
+from .token import Token
 
 __all__ = [
     # Main classes
@@ -20,11 +23,17 @@ __all__ = [
     "Restriction",
     # Restriction subclasses
     "DateRestriction",
-    "NoopRestriction",
-    "ProjectsRestriction",
+    "ProjectNamesRestriction",
+    "ProjectIDsRestriction",
+    "UserIDRestriction",
+    # Legacy restriction subclasses
+    "LegacyNoopRestriction",
+    "LegacyProjectNamesRestriction",
+    "LegacyDateRestriction",
     # Exceptions
     "PyPITokenException",
     "InvalidRestriction",
     "LoaderError",
     "ValidationError",
+    "MissingContextError",
 ]

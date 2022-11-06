@@ -34,15 +34,8 @@ sys.path.append(str(pathlib.Path("sphinxext").absolute()))
 extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
-    "sphinx_autodoc_typehints",
     "sphinx_github_changelog",
 ]
-try:
-    import sphinxcontrib.spelling  # noqa
-except ImportError:
-    pass
-else:
-    extensions.append("sphinxcontrib.spelling")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -59,10 +52,6 @@ default_role = "any"
 # If we don't do that, glossary checks are case sensitive.
 # https://github.com/sphinx-doc/sphinx/issues/7418
 suppress_warnings = ["ref.term"]
-
-# -- Spell check -------------------------------------------------------------
-
-spelling_word_list_filename = "spelling_wordlist.txt"
 
 # -- Options for HTML output -------------------------------------------------
 

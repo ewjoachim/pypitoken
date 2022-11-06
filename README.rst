@@ -57,12 +57,15 @@ Here's an example:
     token = pypitoken.Token.load("pypi-foobartoken")
 
     print(token.restrictions)
-    # [NoopRestriction()]
+    # [ProjectIDsRestriction(project_ids=["00000000-0000-0000-0000-000000000000"])]
 
-    token.restrict(projects=["requests"])
+    token.restrict(project_names=["requests"])
 
     print(token.restrictions)
-    # [NoopRestriction(), ProjectsRestriction(projects=["requests"])]
+    # [
+    #     ProjectIDsRestriction(project_ids=["00000000-0000-0000-0000-000000000000"]),
+    #     ProjectNamesRestriction(project_names=["requests"]),
+    # ]
 
     token.dump()
     # pypi-newfoobartoken

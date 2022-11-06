@@ -22,6 +22,8 @@ jobs:
             script: tests
           - python_version: "3.10"
             script: tests
+          - python_version: "3.11"
+            script: tests
 
     name: "py${{ matrix.python_version }} / ${{ matrix.script }}"
     runs-on: ubuntu-latest

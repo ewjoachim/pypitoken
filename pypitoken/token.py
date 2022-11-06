@@ -1,379 +1,16 @@
 from __future__ import annotations
 
-import dataclasses
 import datetime
 import functools
-import json
-import time
-from typing import Any, Iterable, TypeVar
 
-import jsonschema
 import pymacaroons
+from typing_extensions import ParamSpec
 
-from pypitoken import exceptions, utils
+from pypitoken import exceptions, restrictions
 
 PREFIX = "pypi"
 
-
-@dataclasses.dataclass
-class Context:
-    """
-    Describe the circumstances sourrounding how the bearer is attempting to use
-    the token. Will be checked against restriction to determine whether the bearer
-    can or cannot use this token for the operation.
-
-    Parameters
-    ----------
-    project :
-        Normalized name of the project the bearer is attempting to upload to
-    """
-
-    project: str
-    now: int = dataclasses.field(default_factory=lambda: int(time.time()))
-
-
-T = TypeVar("T", bound="Restriction")
-
-
-# Making the class a dataclass is mainly meant to ease comparison using ==
-@dataclasses.dataclass
-class Restriction:
-    """
-    Base Restriction class.
-
-    Expose lower-level methods for restriction/caveat introspection.
-    """
-
-    @staticmethod
-    def _get_schema() -> dict:
-        """
-        Return a jsonschema Dict object used to validate the format
-        of a json restriction.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def _load_value(cls: type[T], value: dict) -> T:
-        """
-        Create a Restriction from the JSON value stored in the caveat
-
-        Raises
-        ------
-        exceptions.LoaderError
-            Raise when the JSON format doesn't match this class' restriction format
-
-        Returns
-        -------
-        Restriction
-        """
-        try:
-            jsonschema.validate(
-                instance=value,
-                schema=cls._get_schema(),
-            )
-        except jsonschema.ValidationError as exc:
-            raise exceptions.LoaderError() from exc
-
-        return cls(**cls._extract_kwargs(value=value))  # type: ignore
-
-    @staticmethod
-    def _get_subclasses() -> list[type[Restriction]]:
-        """
-        List all subclasses of Restriction that we want to match against
-        """
-        # We could use __subclasses__ but that could lead to all kinds of funky things,
-        # especially in a security-sensistive library.
-        # Tests will check this against Restriction subclasses though.
-        return [NoopRestriction, ProjectsRestriction, DateRestriction]
-
-    @staticmethod
-    def _json_load_caveat(caveat: str) -> Any:
-        try:
-            value = json.loads(caveat)
-        except Exception as exc:
-            raise exceptions.LoaderError(f"Error while loading caveat: {exc}") from exc
-
-        return value
-
-    @classmethod
-    def load(cls, caveat: dict) -> Restriction:
-        """
-        Create a Restriction from a raw caveat restriction JSON object.
-
-        Raises
-        ------
-        pypitokens.LoaderError
-            If the format cannot be understood
-
-        Returns
-        -------
-        `Restriction`
-        """
-        for subclass in cls._get_subclasses():
-            try:
-                return subclass._load_value(value=caveat)
-            except exceptions.LoaderError:
-                continue
-
-        raise exceptions.LoaderError(
-            f"Could not find matching Restriction for {caveat}"
-        )
-
-    @classmethod
-    def load_json(cls, caveat: str) -> Restriction:
-        """
-        Create a Restriction from a raw caveat restriction JSON string.
-
-        Raises
-        ------
-        pypitokens.LoaderError
-            If the format cannot be understood
-
-        Returns
-        -------
-        `Restriction`
-        """
-        caveat_obj = cls._json_load_caveat(caveat=caveat)
-        return cls.load(caveat=caveat_obj)
-
-    @classmethod
-    def _extract_kwargs(cls, value: dict) -> dict:
-        """
-        Receive the parsed JSON value of a caveat for which the schema has been
-        validated. Return the instantiation kwargs (``__init__`` parameters).
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def from_parameters(cls: type[T], **kwargs) -> T | None:
-        """
-        Contructs an instance from the parameters passed to `Token.restrict`
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def restriction_parameters(cls):
-        return utils.merge_parameters(
-            *(subclass.from_parameters for subclass in cls._get_subclasses())
-        )
-
-    @classmethod
-    def restrictions_from_parameters(cls, **kwargs) -> Iterable[Restriction]:
-        """
-        Contructs an iterable of Restriction subclass instances from the parameters
-        passed to `Token.restrict`
-        """
-        for subclass in cls._get_subclasses():
-            restriction = subclass.from_parameters(**kwargs)
-            if restriction:
-                yield restriction
-
-    def check(self, context: Context) -> None:
-        """
-        Receive the context of a check
-
-        Parameters
-        ----------
-        context :
-            Describes how the bearer is attempting to use the token.
-
-        Raises
-        ------
-        `ValidationError`
-            Restriction was checked and appeared unmet.
-        """
-        raise NotImplementedError
-
-    def dump(self) -> dict:
-        """
-        Transform a restriction into a JSON-compatible dict object
-        """
-        raise NotImplementedError
-
-    def dump_json(self) -> str:
-        """
-        Transform a restriction into a JSON-encoded string
-        """
-        return json.dumps(self.dump())
-
-
-@dataclasses.dataclass
-class NoopRestriction(Restriction):
-    """
-    Says it restricts the `Token`, but doesn't actually restrict it.
-    """
-
-    @staticmethod
-    def _get_schema() -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "version": {"type": "integer", "const": 1},
-                "permissions": {"type": "string", "const": "user"},
-            },
-            "required": ["version", "permissions"],
-            "additionalProperties": False,
-        }
-
-    @classmethod
-    def _extract_kwargs(cls, value: dict) -> dict:
-        return {}
-
-    def check(self, context: Context) -> None:
-        # Always passes
-        return
-
-    def dump(self) -> dict:
-        return {"version": 1, "permissions": "user"}
-
-    @classmethod
-    def from_parameters(cls, **kwargs) -> NoopRestriction | None:
-        if not kwargs:
-            return cls()
-        return None
-
-
-@dataclasses.dataclass
-class ProjectsRestriction(Restriction):
-    """
-    Restrict a `Token` to uploading releases for a specific set of packages.
-
-    Attributes
-    ----------
-    projects :
-        Normalized project names this token may upload to.
-    """
-
-    projects: list[str]
-
-    @staticmethod
-    def _get_schema() -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "version": {"type": "integer", "const": 1},
-                "permissions": {
-                    "type": "object",
-                    "properties": {
-                        "projects": {"type": "array", "items": {"type": "string"}}
-                    },
-                    "required": ["projects"],
-                    "additionalProperties": False,
-                },
-            },
-            "required": ["version", "permissions"],
-            "additionalProperties": False,
-        }
-
-    @classmethod
-    def _extract_kwargs(cls, value: dict) -> dict:
-        return {"projects": value["permissions"]["projects"]}
-
-    def dump(self) -> dict:
-        return {"version": 1, "permissions": {"projects": self.projects}}
-
-    def check(self, context: Context) -> None:
-        project = context.project
-
-        if project not in self.projects:
-            raise exceptions.ValidationError(
-                f"This token can only be used for project(s): "
-                f"{', '.join(self.projects)}. Received: {project}"
-            )
-
-    @classmethod
-    def from_parameters(
-        cls,
-        projects: list[str] | None = None,
-        **kwargs,
-    ) -> ProjectsRestriction | None:
-        if projects is not None:
-            return cls(projects=projects)
-        return None
-
-
-@dataclasses.dataclass
-class DateRestriction(Restriction):
-    """
-    Restrict a `Token` to a single time interval.
-
-    Attributes
-    ----------
-    not_before :
-        Token is not to be used before this Unix timestamp.
-    not_after :
-        Token is not to be used after this Unix timestamp.
-
-    """
-
-    not_before: int
-    not_after: int
-
-    @staticmethod
-    def _get_schema() -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "nbf": {"type": "integer"},
-                "exp": {"type": "integer"},
-            },
-            "required": ["nbf", "exp"],
-            "additionalProperties": False,
-        }
-
-    @classmethod
-    def _extract_kwargs(cls, value: dict) -> dict:
-        return {
-            "not_before": value["nbf"],
-            "not_after": value["exp"],
-        }
-
-    def dump(self) -> dict:
-        return {"nbf": self.not_before, "exp": self.not_after}
-
-    def check(self, context: Context) -> None:
-        now: int = context.now
-
-        if not self.not_before <= now < self.not_after:
-            raise exceptions.ValidationError(
-                f"This token can only be used between timestamps "
-                f"{self.not_before} (incl) and {self.not_after} (excl). "
-                f"Received: {now}"
-            )
-
-    @classmethod
-    def from_parameters(
-        cls,
-        not_before: datetime.datetime | int | None = None,
-        not_after: datetime.datetime | int | None = None,
-        **kwargs,
-    ) -> DateRestriction | None:
-        if not_before or not_after:
-            if not (not_before and not_after):
-                raise exceptions.InvalidRestriction(
-                    "`not_before` and `not_after` parameters must be used together. "
-                    "Either define both or neither. "
-                    f"Received not_before={not_before} and not_after={not_after}"
-                )
-            return cls(
-                not_before=cls.timestamp_from_parameter(not_before),
-                not_after=cls.timestamp_from_parameter(not_after),
-            )
-        return None
-
-    @staticmethod
-    def timestamp_from_parameter(param: datetime.datetime | int) -> int:
-        if isinstance(param, int):
-            return param
-        # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
-        naive = param.tzinfo is None or param.tzinfo.utcoffset(param) is None
-        if naive:
-            raise exceptions.InvalidRestriction(
-                "Cannot use a naive datetime. Either provide a timezone or "
-                "the timestamp directly. "
-                "Received {param}"
-            )
-        return int(param.timestamp())
+P = ParamSpec("P")
 
 
 class Token:
@@ -511,14 +148,26 @@ class Token:
         token = cls(prefix=prefix, macaroon=macaroon)
         return token
 
-    def restrict(self, **kwargs) -> Token:
+    def restrict(
+        self,
+        not_before: int | datetime.datetime | None = None,
+        not_after: int | datetime.datetime | None = None,
+        project_names: list[str] | None = None,
+        project_ids: list[str] | None = None,
+        user_id: str | None = None,
+        # Legacy params
+        legacy_project_names: list[str] | None = None,
+        legacy_not_before: int | datetime.datetime | None = None,
+        legacy_not_after: int | datetime.datetime | None = None,
+        legacy_noop: bool | None = None,
+    ) -> Token:
         """
         Modifies the token in-place to add restrictions to it. This can be called by
         PyPI as well as by anyone, adding restrictions to new or existing tokens.
 
-        Note that if no parameter is passed, and the token has no other restrictions
-        already, this method will still add a noop restriction, to match the original
-        implementation.
+        Multiple restrictions of different types can be added in one call to
+        `restrict()`. Alternatively, multiple restrictions of the same type can be added
+        via multiple calls to `restrict()`.
 
         Note: a token allows the owner to delegate their rights to the bearer.
         Consequently, a token adding restrictions linked to a project that the owner
@@ -529,19 +178,46 @@ class Token:
 
         Parameters
         ----------
-        projects :
-            Restrict the token to uploading releases only for projects with these
-            normalized names, by default None (no restriction)
+
         not_before :
-            Restrict the token to uploading releases only after the given timestamp
-            or tz-aware datetime. Must be used with ``not_after``.
+            Restrict the token to uploading releases only after the given timestamp or
+            tz-aware datetime. Must be used with ``not_after``. By default, None (no
+            restriction)
         not_after :
-            Restrict the token to uploading releases only before the given timestamp
-            or tz-aware datetime. Must be used with ``not_before``.
+            Restrict the token to uploading releases only before the given timestamp or
+            tz-aware datetime. Must be used with ``not_before``. By default, None (no
+            restriction)
+        project_names :
+            Restrict the token to uploading releases only for projects with these names,
+            by default None (no restriction)
+        project_ids :
+            Restrict the token to uploading releases only for projects with these ids,
+            by default None (no restriction)
+        user_ids :
+            Restrict the token to uploading user attempting to upload Restrict the token
+            to being used only by user with this id, by default None (no restriction)
+        legacy_not_before :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only after the given timestamp or tz-aware
+            datetime. Must be used with ``not_after``. By default, None (no restriction)
+        legacy_not_after :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only before the given timestamp or tz-aware
+            datetime. Must be used with ``not_before``. By default, None (no
+            restriction)
+        legacy_project_names :
+            Uses the legacy restriction format (results in longer token size). Restrict
+            the token to uploading releases only for projects with these ed name of the
+            project the bearer is attempting to upload toed names, by default None (no
+            restriction)
+        legacy_noop :
+            Uses the legacy restriction format (results in longer token size). user
+            attempting to upload This restriction being there or not doesn't change the
+            validity of the token.
 
         Raises
         ------
-        exceptions.InvalidRestriction
+        exceptions.Invalidrestrictions.Restriction
             If the provided parameters cannot describe a valid description
 
         Returns
@@ -549,7 +225,17 @@ class Token:
         `Token`
             The modified Token, to ease chaining calls.
         """
-        for restriction in Restriction.restrictions_from_parameters(**kwargs):
+        for restriction in restrictions.Restriction.restrictions_from_parameters(
+            not_before=not_before,
+            not_after=not_after,
+            project_names=project_names,
+            project_ids=project_ids,
+            user_id=user_id,
+            legacy_project_names=legacy_project_names,
+            legacy_not_before=legacy_not_before,
+            legacy_not_after=legacy_not_after,
+            legacy_noop=legacy_noop,
+        ):
             self._macaroon.add_first_party_caveat(restriction.dump_json())
 
         return self
@@ -566,36 +252,53 @@ class Token:
         """
         return f"{self.prefix}-{self._macaroon.serialize()}"
 
-    def check(self, key: str | bytes, project: str, now: int | None = None) -> None:
+    def check(
+        self,
+        key: str | bytes,
+        project_name: str | None = None,
+        project_id: str | None = None,
+        user_id: str | None = None,
+        now: int | datetime.datetime | None = None,
+    ) -> None:
         """
         Raises pypitoken.ValidationError if the token is invalid.
 
-        Parameters besides ``key`` will be used to provide the current context
-        this token is used for, allowing to accept or reject the caveat restrictions.
-        If a parameter is not passed, but a caveat using it is encountered, the
-        caveat will not be met, the token will be found invalid, and this method
-        will raise with an appropriate exception.
+        Parameters besides ``key`` are all optional and will be used to provide the
+        current context this token is used for, allowing to accept or reject the caveat
+        restrictions. If a parameter is not passed, but a caveat using it is
+        encountered, the caveat will not be met, the token will be found invalid, and
+        this method will raise with an appropriate exception. There is an exception for
+        ``now``: if not passed, it defaults to the current timestamp.
 
         Parameters
         ----------
         key : str
             Key of the macaroon, stored in PyPI database
-        project : Optional[str], optional
-            Normalized name of the project the bearer is attempting to upload to.
+        project_name :
+            Normalized name of the project the bearer is attempting to upload to
+        project_id :
+            ID of the project the bearer is attempting to upload to
+        user_id :
+            ID of the user attempting to upload
+        now :
+            Timestamp of the moment the upload takes place, or tz-aware datetime.
+            Defaults to the current timestamp.
 
         Raises
         ------
         `pypitoken.ValidationError`
-            Any error in validating the token will be raised as a ValidationError.
-            The original exception (if any) will be attached
-            as the exception cause (``raise from``).
+            Any error in validating the token will be raised as a ValidationError. The
+            original exception (if any) will be attached as the exception cause (``raise
+            from``).
         """
         verifier = pymacaroons.Verifier()
 
-        context_kwargs: dict[str, Any] = {"project": project}
-        if now:
-            context_kwargs["now"] = now
-        context = Context(**context_kwargs)
+        context = restrictions.Context(
+            project_name=project_name,
+            project_id=project_id,
+            user_id=user_id,
+            now=now,
+        )
 
         errors: list[Exception] = []
 
@@ -616,7 +319,11 @@ class Token:
             ) from exc
 
     @staticmethod
-    def _check_caveat(caveat: str, context: Context, errors: list[Exception]) -> bool:
+    def _check_caveat(
+        caveat: str,
+        context: restrictions.Context,
+        errors: list[Exception],
+    ) -> bool:
         """
         This method follows the pymacaroon Verifier.satisfy_general API, except
         that it takes a context parameter. It's expected to be used with
@@ -640,7 +347,7 @@ class Token:
         """
 
         try:
-            restriction = Restriction.load_json(caveat=caveat)
+            restriction = restrictions.Restriction.load_json(caveat=caveat)
         except exceptions.LoaderError as exc:
             errors.append(exc)
             return False
@@ -654,14 +361,14 @@ class Token:
         return True
 
     @property
-    def restrictions(self) -> list[Restriction]:
+    def restrictions(self) -> list[restrictions.Restriction]:
         """
         Return a list of restrictions associated to this `Token`. This can be used
         to get a better insight on what this `Token` contains.
 
         Returns
         -------
-        List[`Restriction`]
+        List[`restrictions.Restriction`]
 
         Raises
         ------
@@ -669,11 +376,6 @@ class Token:
             When the existing restrictions cannot be parsed
         """
         return [
-            Restriction.load_json(caveat=caveat.caveat_id)
+            restrictions.Restriction.load_json(caveat=caveat.caveat_id)
             for caveat in self._macaroon.caveats
         ]
-
-
-utils.replace_signature(
-    method=Token.restrict, parameters=Restriction.restriction_parameters()
-)
