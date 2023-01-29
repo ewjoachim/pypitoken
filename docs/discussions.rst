@@ -70,10 +70,10 @@ The legacy caveat are represented by classes prefixed by ``Legacy``.
 
 The types of caveats are:
 
-- ``[0, <timestamp: int>, <timestamp: int>]`` is met if we try uploading the
-  project between ``nbf`` (included) and ``exp`` (excluded). It's represented
-  by the class `DateRestriction`. Legacy format is ``"{"nbf": <timestamp: int>,
-  "exp": <timestamp: int>}"`` and the corresponding class is
+- ``[0, <exp: int>, <nbf: int>]`` is met if we try uploading the project
+  between timestamps ``nbf`` (included) and ``exp`` (excluded). It's
+  represented by the class `DateRestriction`. Legacy format is ``"{"nbf":
+  <timestamp: int>, "exp": <timestamp: int>}"`` and the corresponding class is
   `LegacyDateRestriction`.
 
 - ``[1, [<project_name: str>, ...]]`` is met if the project we upload is among
