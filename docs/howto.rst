@@ -87,11 +87,11 @@ without a token. In this case, you can use the methods on the `Restriction` clas
 
     import pypitoken
     restriction = pypitoken.Restriction.load_json(
-        '[0, 1234567890, 1234567891]'
+        '[0, 1234567891, 1234567890]'
     )
     # or
     restriction = pypitoken.Restriction.load(
-        [0, 1234567890, 1234567891]
+        [0, 1234567891, 1234567890]
     )
     # DateRestriction()
 
