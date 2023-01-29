@@ -13,7 +13,7 @@ PyPIToken: Manipulate PyPI API tokens
     :target: https://github.com/ewjoachim/pypitoken/
     :alt: GitHub Repository
 
-.. image:: https://img.shields.io/github/workflow/status/ewjoachim/pypitoken/CI?logo=github
+.. image:: https://img.shields.io/github/actions/workflow/status/ewjoachim/pypitoken/ci.yml?logo=github
     :target: https://github.com/ewjoachim/pypitoken/actions?workflow=CI
     :alt: Continuous Integration
 
