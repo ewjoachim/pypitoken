@@ -273,12 +273,12 @@ class DateRestriction(Restriction):
     @classmethod
     def _extract_kwargs(cls, value: list) -> dict:
         return {
-            "not_before": value[1],
-            "not_after": value[2],
+            "not_before": value[2],  # Yes, the official order is "reversed"
+            "not_after": value[1],
         }
 
     def dump(self) -> list:
-        return [self.tag, self.not_before, self.not_after]
+        return [self.tag, self.not_after, self.not_before]
 
     def check(self, context: Context) -> None:
         super().check(context=context)

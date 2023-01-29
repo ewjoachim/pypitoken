@@ -367,7 +367,7 @@ def test__Restriction__restrictions_from_parameters():
 
 def test__DateRestriction__load_value__pass():
     assert restrictions.DateRestriction._load_value(
-        value=[0, 1_234_567_890, 1_234_567_900]
+        value=[0, 1_234_567_900, 1_234_567_890]
     ) == restrictions.DateRestriction(not_before=1_234_567_890, not_after=1_234_567_900)
 
 
@@ -375,12 +375,12 @@ def test__DateRestriction__load_value__pass():
     "value",
     [
         [],
-        [1, 1_234_567_890, 1_234_567_900],
+        [1, 1_234_567_900, 1_234_567_890],
         [0],
         [0, 1_234_567_890],
-        [0, 1_234_567_890, 1_234_567_900, 1_234_567_999],
-        [0, "1_234_567_890", "1_234_567_900"],
-        [0, "2000-01-01 00:00:00", "2000-01-02 00:00:00"],
+        [0, 1_234_567_890, 1_234_567_999, 1_234_567_900],
+        [0, "1_234_567_900", "1_234_567_890"],
+        [0, "2000-01-02 00:00:00", "2000-01-01 00:00:00"],
     ],
 )
 def test__DateRestriction__load_value__fail(value):
@@ -389,7 +389,7 @@ def test__DateRestriction__load_value__fail(value):
 
 
 def test__DateRestriction__extract_kwargs():
-    value = [0, 1_234_567_890, 1_234_567_900]
+    value = [0, 1_234_567_900, 1_234_567_890]
     kwargs = restrictions.DateRestriction._extract_kwargs(value=value)
     assert kwargs == {"not_before": 1_234_567_890, "not_after": 1_234_567_900}
 
@@ -420,7 +420,7 @@ def test__DateRestriction__dump():
     restriction = restrictions.DateRestriction(
         not_before=1_234_567_890, not_after=1_234_567_900
     )
-    assert restriction.dump() == [0, 1_234_567_890, 1_234_567_900]
+    assert restriction.dump() == [0, 1_234_567_900, 1_234_567_890]
 
 
 def test__DateRestriction__from_parameters__empty():
