@@ -36,7 +36,7 @@ pytest-mock = "*"
 
 [tool.poetry.group.lint.dependencies]
 black = "*"
-isort = "*"
+isort = { version = "*", python = ">=3.8" }
 flake8 = "*"
 mypy = "*"
 
