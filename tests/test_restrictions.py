@@ -634,7 +634,6 @@ def test__ProjectIDsRestriction__check__fail():
         ]
     )
     with pytest.raises(exceptions.ValidationError):
-
         restriction.check(
             context=restrictions.Context(
                 project_id="00000000-0000-0000-0000-000000000002"
@@ -742,7 +741,6 @@ def test__UserIDRestriction__check__fail():
         user_id="00000000-0000-0000-0000-000000000000"
     )
     with pytest.raises(exceptions.ValidationError):
-
         restriction.check(
             context=restrictions.Context(user_id="00000000-0000-0000-0000-000000000002")
         )
@@ -753,7 +751,6 @@ def test__UserIDRestriction__check__missing_context():
         user_id="00000000-0000-0000-0000-000000000000"
     )
     with pytest.raises(exceptions.MissingContextError):
-
         restriction.check(context=restrictions.Context())
 
 
