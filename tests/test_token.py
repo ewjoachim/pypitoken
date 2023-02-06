@@ -92,7 +92,6 @@ def test__Token__load__pass():
     ],
 )
 def test__Token__load__fail_format(raw, error):
-
     with pytest.raises(exceptions.LoaderError) as exc_info:
         token.Token.load(raw=raw)
 
@@ -101,7 +100,6 @@ def test__Token__load__fail_format(raw, error):
 
 @pytest.mark.parametrize("key", ["ohsosecret", b"ohsosecret"])
 def test__Token__create(key):
-
     tok = token.Token.create(
         domain="example.com",
         identifier="123foo",
@@ -113,7 +111,6 @@ def test__Token__create(key):
 
 
 def test__Token__restrict__empty(create_token):
-
     tok = create_token()
     assert tok._macaroon.caveats == []
     tok.restrict()
@@ -130,7 +127,6 @@ def test__Token__restrict__projects(create_token):
 
 
 def test__Token__restrict__multiple(create_token):
-
     tok = create_token()
     assert tok._macaroon.caveats == []
     tok.restrict(project_names=["a", "b"])
@@ -150,7 +146,6 @@ def test__Token__check__pass(create_token):
 
 
 def test__Token__check__fail__signature(create_token):
-
     tok = create_token(key="ohsosecret")
     tok.restrict(project_names=["a", "b"])
     with pytest.raises(exceptions.ValidationError) as exc_info:
@@ -161,7 +156,6 @@ def test__Token__check__fail__signature(create_token):
 
 
 def test__Token__check__fail__caveat(create_token):
-
     tok = create_token(key="ohsosecret")
     tok.restrict(project_names=["a", "b"])
     with pytest.raises(exceptions.ValidationError) as exc_info:
@@ -173,7 +167,6 @@ def test__Token__check__fail__caveat(create_token):
 
 
 def test__Token__restrictions(create_token):
-
     tok = create_token()
     tok.restrict(project_names=["a", "b"])
     tok.restrict(project_names=["a", "d"])
