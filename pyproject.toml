@@ -15,7 +15,7 @@ documentation = "https://pypitoken.readthedocs.io/en/latest/"
 keywords = ["pypi", "api", "token", "security", "packaging"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 pymacaroons = "^0.13.0"
 jsonschema = "*"
 typing-extensions = "*"

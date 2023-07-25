@@ -14,8 +14,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - python_version: "3.7"
-            script: tests
           - python_version: "3.8"
             script: tests
           - python_version: "3.9"
