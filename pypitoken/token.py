@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+from typing import Iterable
 
 import pymacaroons
 from typing_extensions import ParamSpec
@@ -152,11 +153,11 @@ class Token:
         self,
         not_before: int | datetime.datetime | None = None,
         not_after: int | datetime.datetime | None = None,
-        project_names: list[str] | None = None,
-        project_ids: list[str] | None = None,
+        project_names: Iterable[str] | None = None,
+        project_ids: Iterable[str] | None = None,
         user_id: str | None = None,
         # Legacy params
-        legacy_project_names: list[str] | None = None,
+        legacy_project_names: Iterable[str] | None = None,
         legacy_not_before: int | datetime.datetime | None = None,
         legacy_not_after: int | datetime.datetime | None = None,
         legacy_noop: bool | None = None,
