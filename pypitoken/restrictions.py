@@ -375,6 +375,11 @@ class ProjectNamesRestriction(Restriction):
         **kwargs,
     ) -> ProjectNamesRestriction | None:
         if project_names is not None:
+            if isinstance(project_names, str):
+                raise TypeError(
+                    "project_names should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
             return cls(project_names=list(project_names))
         return None
 
@@ -439,6 +444,11 @@ class ProjectIDsRestriction(Restriction):
         **kwargs,
     ) -> ProjectIDsRestriction | None:
         if project_ids is not None:
+            if isinstance(project_ids, str):
+                raise TypeError(
+                    "project_ids should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
             return cls(project_ids=list(project_ids))
         return None
 
