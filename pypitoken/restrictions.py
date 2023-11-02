@@ -612,6 +612,11 @@ class LegacyProjectNamesRestriction(Restriction):
         **kwargs,
     ) -> LegacyProjectNamesRestriction | None:
         if legacy_project_names is not None:
+            if isinstance(legacy_project_names, str):
+                raise TypeError(
+                    "legacy_project_names should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
             return cls(project_names=list(legacy_project_names))
         return None
 
