@@ -371,11 +371,16 @@ class ProjectNamesRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        project_names: list[str] | None = None,
+        project_names: Iterable[str] | None = None,
         **kwargs,
     ) -> ProjectNamesRestriction | None:
         if project_names is not None:
-            return cls(project_names=project_names)
+            if isinstance(project_names, str):
+                raise exceptions.InvalidRestriction(
+                    "project_names should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
+            return cls(project_names=list(project_names))
         return None
 
 
@@ -435,11 +440,16 @@ class ProjectIDsRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        project_ids: list[str] | None = None,
+        project_ids: Iterable[str] | None = None,
         **kwargs,
     ) -> ProjectIDsRestriction | None:
         if project_ids is not None:
-            return cls(project_ids=project_ids)
+            if isinstance(project_ids, str):
+                raise exceptions.InvalidRestriction(
+                    "project_ids should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
+            return cls(project_ids=list(project_ids))
         return None
 
 
@@ -598,11 +608,16 @@ class LegacyProjectNamesRestriction(Restriction):
     @classmethod
     def from_parameters(
         cls,
-        legacy_project_names: list[str] | None = None,
+        legacy_project_names: Iterable[str] | None = None,
         **kwargs,
     ) -> LegacyProjectNamesRestriction | None:
         if legacy_project_names is not None:
-            return cls(project_names=legacy_project_names)
+            if isinstance(legacy_project_names, str):
+                raise exceptions.InvalidRestriction(
+                    "legacy_project_names should be an iterable of strings. "
+                    "Received a single string not wrapped in an iterable."
+                )
+            return cls(project_names=list(legacy_project_names))
         return None
 
 
