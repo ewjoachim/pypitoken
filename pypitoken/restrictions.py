@@ -376,7 +376,7 @@ class ProjectNamesRestriction(Restriction):
     ) -> ProjectNamesRestriction | None:
         if project_names is not None:
             if isinstance(project_names, str):
-                raise TypeError(
+                raise exceptions.InvalidRestriction(
                     "project_names should be an iterable of strings. "
                     "Received a single string not wrapped in an iterable."
                 )
@@ -445,7 +445,7 @@ class ProjectIDsRestriction(Restriction):
     ) -> ProjectIDsRestriction | None:
         if project_ids is not None:
             if isinstance(project_ids, str):
-                raise TypeError(
+                raise exceptions.InvalidRestriction(
                     "project_ids should be an iterable of strings. "
                     "Received a single string not wrapped in an iterable."
                 )
@@ -613,7 +613,7 @@ class LegacyProjectNamesRestriction(Restriction):
     ) -> LegacyProjectNamesRestriction | None:
         if legacy_project_names is not None:
             if isinstance(legacy_project_names, str):
-                raise TypeError(
+                raise exceptions.InvalidRestriction(
                     "legacy_project_names should be an iterable of strings. "
                     "Received a single string not wrapped in an iterable."
                 )

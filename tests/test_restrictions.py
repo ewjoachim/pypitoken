@@ -198,6 +198,13 @@ def test__LegacyProjectNamesRestriction__from_parameters__not_empty():
     ) == restrictions.LegacyProjectNamesRestriction(project_names=["a", "b"])
 
 
+def test__LegacyProjectNamesRestriction__from_parameters__bare_string():
+    with pytest.raises(exceptions.InvalidRestriction):
+        restrictions.LegacyProjectNamesRestriction.from_parameters(
+            legacy_project_names="a"
+        )
+
+
 def test__LegacyDateRestriction__load_value__pass():
     assert restrictions.LegacyDateRestriction._load_value(
         value={"nbf": 1_234_567_890, "exp": 1_234_567_900}
@@ -546,6 +553,11 @@ def test__ProjectNamesRestriction__from_parameters__empty():
     assert restrictions.ProjectNamesRestriction.from_parameters() is None
 
 
+def test__ProjectNamesRestriction__from_parameters__bare_string():
+    with pytest.raises(exceptions.InvalidRestriction):
+        restrictions.ProjectNamesRestriction.from_parameters(project_names="a")
+
+
 def test__ProjectNamesRestriction__from_parameters__not_empty():
     assert restrictions.ProjectNamesRestriction.from_parameters(
         project_names=["a", "b"]
@@ -667,6 +679,13 @@ def test__ProjectIDsRestriction__dump():
 
 def test__ProjectIDsRestriction__from_parameters__empty():
     assert restrictions.ProjectIDsRestriction.from_parameters() is None
+
+
+def test__ProjectIDsRestriction__from_parameters__bare_string():
+    with pytest.raises(exceptions.InvalidRestriction):
+        restrictions.ProjectIDsRestriction.from_parameters(
+            project_ids="00000000-0000-0000-0000-000000000000"
+        )
 
 
 def test__ProjectIDsRestriction__from_parameters__not_empty():
