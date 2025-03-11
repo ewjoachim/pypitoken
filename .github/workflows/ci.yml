@@ -14,13 +14,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - python_version: "3.8"
-            script: tests
           - python_version: "3.9"
             script: tests
           - python_version: "3.10"
             script: tests
           - python_version: "3.11"
+            script: tests
+          - python_version: "3.12"
+            script: tests
+          - python_version: "3.13"
             script: tests
 
     name: "py${{ matrix.python_version }} / ${{ matrix.script }}"
@@ -50,13 +52,6 @@ jobs:
 
       - name: Run ${{ matrix.script }}
         run: scripts/${{ matrix.script }}
-        env:
-          PYTEST_ADDOPTS: "--cov-report=xml"
-
-      # - name: Display coverage
-      #   uses: ewjoachim/coverage-comment-action@v1
-      #   with:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   report-status:
     name: success
