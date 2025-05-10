@@ -1,7 +1,7 @@
 {
     extends: ["config:recommended", ":enablePreCommit"],
     schedule: ["before 4am on Saturday"],
-    labels: ["PR type: dependencies 🤖"],
+    labels: ["renovate"],
     lockFileMaintenance: {
         enabled: true,
         automerge: true,
