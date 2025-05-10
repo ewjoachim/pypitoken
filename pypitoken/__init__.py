@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .exceptions import (
     InvalidRestriction,
     LoaderError,
@@ -18,22 +20,22 @@ from .restrictions import (
 from .token import Token
 
 __all__ = [
-    # Main classes
-    "Token",
-    "Restriction",
     # Restriction subclasses
     "DateRestriction",
-    "ProjectNamesRestriction",
-    "ProjectIDsRestriction",
-    "UserIDRestriction",
+    "InvalidRestriction",
+    "LegacyDateRestriction",
     # Legacy restriction subclasses
     "LegacyNoopRestriction",
     "LegacyProjectNamesRestriction",
-    "LegacyDateRestriction",
+    "LoaderError",
+    "MissingContextError",
+    "ProjectIDsRestriction",
+    "ProjectNamesRestriction",
     # Exceptions
     "PyPITokenException",
-    "InvalidRestriction",
-    "LoaderError",
+    "Restriction",
+    # Main classes
+    "Token",
+    "UserIDRestriction",
     "ValidationError",
-    "MissingContextError",
 ]

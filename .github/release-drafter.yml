@@ -1,8 +1,0 @@
-tag-template: '$NEXT_PATCH_VERSION'
-change-template: '- $TITLE (#$NUMBER)'
-template: |
-  $CHANGES
-
-  ## Kudos:
-
-  $CONTRIBUTORS

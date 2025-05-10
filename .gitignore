@@ -3,7 +3,6 @@ __pycache__
 .DS_Store
 .mypy_cache
 .pytest_cache
-.tox
 .venv
 *.egg-info
 *.pyc

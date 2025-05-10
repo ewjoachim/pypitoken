@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import functools
-from typing import Iterable
+from collections.abc import Iterable
 
 import pymacaroons
 from typing_extensions import ParamSpec
@@ -58,11 +58,11 @@ class Token:
 
     @property
     def domain(self) -> str:
-        return self._macaroon.location
+        return self._macaroon.location or ""
 
     @property
     def identifier(self) -> str:
-        return self._macaroon.identifier.decode("utf-8")
+        return (self._macaroon.identifier_bytes or b"").decode("utf-8")
 
     @classmethod
     def load(cls, raw: str) -> Token:
@@ -310,14 +310,15 @@ class Token:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
         except Exception as exc:
+            final_exc = exc
             if errors:
                 # (we know it's actually a single item, there cannot be multiple items
                 # in this list)
-                (exc,) = errors
+                (final_exc,) = errors
 
             raise exceptions.ValidationError(
-                f"Error while validating token: {exc}"
-            ) from exc
+                f"Error while validating token: {final_exc}"
+            ) from final_exc
 
     @staticmethod
     def _check_caveat(

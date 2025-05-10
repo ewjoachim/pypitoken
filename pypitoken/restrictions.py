@@ -4,7 +4,8 @@ import dataclasses
 import datetime
 import json
 import time
-from typing import Any, ClassVar, Iterable, TypeVar
+from collections.abc import Iterable
+from typing import Any, ClassVar, TypeVar
 
 import jsonschema
 
@@ -70,8 +71,8 @@ class Restriction:
 
     needs_context: ClassVar[list[str]] = []
 
-    @staticmethod
-    def _get_schema() -> dict:
+    @classmethod
+    def _get_schema(cls) -> dict:
         """
         Return a jsonschema Dict object used to validate the format
         of a json restriction.
@@ -520,8 +521,8 @@ class LegacyNoopRestriction(Restriction):
     Says it restricts the `Token`, but doesn't actually restrict it.
     """
 
-    @staticmethod
-    def _get_schema() -> dict:
+    @classmethod
+    def _get_schema(cls) -> dict:
         return {
             "type": "object",
             "properties": {
@@ -569,8 +570,8 @@ class LegacyProjectNamesRestriction(Restriction):
     project_names: list[str]
     needs_context: ClassVar[list[str]] = ["project_name"]
 
-    @staticmethod
-    def _get_schema() -> dict:
+    @classmethod
+    def _get_schema(cls) -> dict:
         return {
             "type": "object",
             "properties": {
@@ -639,8 +640,8 @@ class LegacyDateRestriction(Restriction):
     not_after: int
     needs_context: ClassVar[list[str]] = ["now"]
 
-    @staticmethod
-    def _get_schema() -> dict:
+    @classmethod
+    def _get_schema(cls) -> dict:
         return {
             "type": "object",
             "properties": {

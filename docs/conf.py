@@ -34,7 +34,6 @@ sys.path.append(str(pathlib.Path("sphinxext").absolute()))
 extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
-    "sphinx_autodoc_typehints",
     "sphinx_github_changelog",
 ]
 
