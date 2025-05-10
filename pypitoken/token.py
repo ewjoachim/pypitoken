@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import functools
-from typing import Iterable
+from collections.abc import Iterable
 
 import pymacaroons
 from typing_extensions import ParamSpec
@@ -309,7 +309,7 @@ class Token:
         try:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
-        except Exception as exc:
+        except Exception:
             if errors:
                 # (we know it's actually a single item, there cannot be multiple items
                 # in this list)

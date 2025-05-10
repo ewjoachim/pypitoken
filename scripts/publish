@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -eu
-
-poetry version $(poetry run dunamai from git --pattern '(?P<base>\d+\.\d+\.\d+)')
-poetry publish --no-interaction --build --username "__token__" --password "$PYPI_TOKEN"

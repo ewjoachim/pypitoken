@@ -7,6 +7,7 @@
 # synchronised through time.
 # When adding new restriction, there are a number of small things we may forget
 # and those tests do their best to double check every one of them.
+from __future__ import annotations
 
 import inspect
 

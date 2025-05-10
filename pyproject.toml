@@ -1,45 +1,72 @@
-[tool.poetry]
+[project]
 name = "pypitoken"
 version = "0.0.0"
 description = "Manipulate PyPI API tokens"
-license = "MIT"
-authors = ["Joachim Jablon <ewjoachim@gmail.com>"]
-classifiers = [
-    "Topic :: Security",
-    "Topic :: System :: Archiving :: Packaging"
-]
+authors = [{ name = "Joachim Jablon", email = "ewjoachim@gmail.com" }]
+requires-python = ">=3.9"
 readme = "README.rst"
-homepage = "https://pypitoken.readthedocs.io/en/latest/"
-repository = "https://github.com/ewjoachim/pypitoken"
-documentation = "https://pypitoken.readthedocs.io/en/latest/"
+license = "MIT"
 keywords = ["pypi", "api", "token", "security", "packaging"]
+classifiers = ["Topic :: Security", "Topic :: System :: Archiving :: Packaging"]
+dependencies = ["pymacaroons>=0.13.0", "jsonschema", "typing-extensions"]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-pymacaroons = "^0.13.0"
-jsonschema = "*"
-typing-extensions = "*"
+[project.urls]
+Homepage = "https://pypitoken.readthedocs.io/en/latest/"
+Repository = "https://github.com/ewjoachim/pypitoken"
+Documentation = "https://pypitoken.readthedocs.io/en/latest/"
 
-[tool.poetry.group.releasec.dependencies]
-dunamai = "*"
+[dependency-groups]
+docs = ["Sphinx", "furo", "sphinx-github-changelog"]
+tests = ["pytest", "pytest-cov", "pytest-mock"]
+dev = ["ruff", "pyright", "doc8"]
 
-[tool.poetry.group.docs.dependencies]
-Sphinx = ">=5"
-furo = "*"
-sphinx-autodoc-typehints = "*"
-sphinx-github-changelog = "*"
-
-[tool.poetry.group.tests.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-mock = "*"
-
-[tool.poetry.group.lint.dependencies]
-black = "*"
-isort = { version = "*", python = ">=3.8" }
-flake8 = "*"
-mypy = "*"
+[tool.uv]
+default-groups = ["docs", "tests", "dev"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+exclude = ["tests", ".venv", "scripts", ".github"]
+
+[tool.ruff]
+target-version = "py39"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+extend-select = [
+    "UP",  # pyupgrade
+    "I",   # isort
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "RUF", # ruff
+]
+fixable = ["ALL"]
+extend-ignore = [
+    "E501", # line too long
+    # It's not exactly false but it's not supported enough by our dependencies,
+    # so ruff is fighting with Pyright on this.
+    "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.doc8]
+max-line-length = 88
+ignore-path = "docs/_build,.venv"
+
+[tool.pytest.ini_options]
+addopts = [
+    "-vv",
+    "--cov=pypitoken",
+    "--strict-markers",
+    "-rfE",
+    "-m not benchmark",
+]
+testpaths = ["tests"]
+filterwarnings = """
+    error
+"""
+pythonpath = ["."]
