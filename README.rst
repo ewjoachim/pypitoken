@@ -9,7 +9,7 @@ PyPIToken: Manipulate PyPI API tokens
     :target: https://pypi.org/pypi/pypitoken
     :alt: Deployed to PyPI
 
-.. image:: https://img.shields.io/github/stars/ewjoachim/pypitoken?logo=github
+.. image:: https://img.shields.io/github/stars/ewjoachim/pypitoken?logo=github&logoColor=white&style=flat&label=GitHub%20repo
     :target: https://github.com/ewjoachim/pypitoken/
     :alt: GitHub Repository
 
