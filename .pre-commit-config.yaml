@@ -58,7 +58,7 @@ repos:
           - nodeenv==1.9.1
           - packaging==25.0
           - pbr==6.1.1
-          - pluggy==1.5.0
+          - pluggy==1.6.0
           - pycparser==2.22
           - pygments==2.19.1
           - pymacaroons==0.13.0
@@ -71,9 +71,9 @@ repos:
           - requests==2.32.3
           - restructuredtext-lint==1.4.0
           - roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
-          - rpds-py==0.24.0
-          - ruff==0.11.9
-          - setuptools==80.4.0
+          - rpds-py==0.25.0
+          - ruff==0.11.10
+          - setuptools==80.7.1
           - six==1.17.0
           - snowballstemmer==3.0.1
           - soupsieve==2.7
