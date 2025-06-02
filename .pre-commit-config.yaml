@@ -52,7 +52,7 @@ repos:
           - importlib-metadata==8.7.0 ; python_full_version < '3.10'
           - iniconfig==2.1.0
           - jinja2==3.1.6
-          - jsonschema==4.23.0
+          - jsonschema==4.24.0
           - jsonschema-specifications==2025.4.1
           - markupsafe==3.0.2
           - nodeenv==1.9.1
@@ -66,14 +66,14 @@ repos:
           - pyright==1.1.401
           - pytest==8.3.5
           - pytest-cov==6.1.1
-          - pytest-mock==3.14.0
+          - pytest-mock==3.14.1
           - referencing==0.36.2
           - requests==2.32.3
           - restructuredtext-lint==1.4.0
           - roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
           - rpds-py==0.25.1
-          - ruff==0.11.11
-          - setuptools==80.8.0
+          - ruff==0.11.12
+          - setuptools==80.9.0
           - six==1.17.0
           - snowballstemmer==3.0.1
           - soupsieve==2.7
@@ -92,7 +92,7 @@ repos:
           - tomli==2.2.1 ; python_full_version <= '3.11'
           - typing-extensions==4.13.2
           - urllib3==2.4.0
-          - zipp==3.21.0 ; python_full_version < '3.10'
+          - zipp==3.22.0 ; python_full_version < '3.10'
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.12
     hooks:
