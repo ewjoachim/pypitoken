@@ -29,7 +29,7 @@ repos:
       - id: trailing-whitespace
       - id: mixed-line-ending
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.401
+    rev: v1.1.402
     hooks:
       - id: pyright
         additional_dependencies:
@@ -38,12 +38,13 @@ repos:
           - attrs==25.3.0
           - babel==2.17.0
           - beautifulsoup4==4.13.4
-          - certifi==2025.4.26
+          - certifi==2025.6.15
           - cffi==1.17.1
           - charset-normalizer==3.4.2
           - colorama==0.4.6 ; sys_platform == 'win32'
-          - coverage==7.8.2
-          - doc8==1.1.2
+          - coverage==7.9.1
+          - doc8==1.1.2 ; python_full_version < '3.10'
+          - doc8==2.0.0 ; python_full_version >= '3.10'
           - docutils==0.21.2
           - exceptiongroup==1.3.0 ; python_full_version < '3.11'
           - furo==2024.8.6
@@ -63,12 +64,12 @@ repos:
           - pygments==2.19.1
           - pymacaroons==0.13.0
           - pynacl==1.5.0
-          - pyright==1.1.401
+          - pyright==1.1.402
           - pytest==8.4.0
-          - pytest-cov==6.1.1
+          - pytest-cov==6.2.1
           - pytest-mock==3.14.1
           - referencing==0.36.2
-          - requests==2.32.3
+          - requests==2.32.4
           - restructuredtext-lint==1.4.0
           - roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
           - rpds-py==0.25.1
@@ -100,7 +101,7 @@ repos:
         args: [--fix, --unsafe-fixes, --show-fixes]
       - id: ruff-format
   - repo: https://github.com/PyCQA/doc8
-    rev: v1.1.2
+    rev: v2.0.0
     hooks:
       - id: doc8
 
