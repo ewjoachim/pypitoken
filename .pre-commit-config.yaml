@@ -43,7 +43,7 @@ repos:
           - cffi==1.17.1
           - charset-normalizer==3.4.3
           - colorama==0.4.6 ; sys_platform == 'win32'
-          - coverage==7.10.3
+          - coverage==7.10.4
           - doc8==1.1.2 ; python_full_version < '3.10'
           - doc8==2.0.0 ; python_full_version >= '3.10'
           - docutils==0.21.2
@@ -59,7 +59,7 @@ repos:
           - markupsafe==3.0.2
           - nodeenv==1.9.1
           - packaging==25.0
-          - pbr==6.1.1
+          - pbr==7.0.0
           - pluggy==1.6.0
           - pycparser==2.22
           - pygments==2.19.2
@@ -74,7 +74,7 @@ repos:
           - restructuredtext-lint==1.4.0
           - roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
           - rpds-py==0.27.0
-          - ruff==0.12.8
+          - ruff==0.12.9
           - setuptools==80.9.0
           - six==1.17.0
           - snowballstemmer==3.0.1
