@@ -105,7 +105,7 @@ repos:
       - id: doc8
 
   - repo: https://github.com/adamchainz/django-upgrade
-    rev: 1.28.0
+    rev: 1.29.0
     hooks:
       - id: django-upgrade
         args: [--target-version, '4.2'] # Replace with Django version
@@ -123,6 +123,6 @@ repos:
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.8.22
+    rev: 0.8.23
     hooks:
       - id: uv-lock
