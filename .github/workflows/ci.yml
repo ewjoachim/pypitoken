@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up UV
         id: setup-uv
-        uses: astral-sh/setup-uv@06e4edb239928eb926db9fa84abd11632bf44baa
+        uses: astral-sh/setup-uv@9c12baee9699f1b4f4318d7175fab8635c2b8e45
         with:
           python-version: ${{ matrix.python_version }}
 
@@ -35,7 +35,7 @@ jobs:
     name: Run Pyright
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
@@ -67,7 +67,7 @@ jobs:
       - tests
       - static-typing
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Build wheel & sdist
         run: pipx run uv build
