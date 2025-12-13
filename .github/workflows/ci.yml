@@ -22,7 +22,7 @@ jobs:
 
       - name: Set up UV
         id: setup-uv
-        uses: astral-sh/setup-uv@9c12baee9699f1b4f4318d7175fab8635c2b8e45
+        uses: astral-sh/setup-uv@e8b52af86e46cb518daf4b47877e582bc9e37b8b
         with:
           python-version: ${{ matrix.python_version }}
 
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
+        uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a # v7
         with:
           python-version: "3.13"
           activate-environment: true
