@@ -94,7 +94,7 @@ repos:
           - urllib3==2.6.3
           - zipp==3.23.0 ; python_full_version < '3.10'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.0
+    rev: v0.15.1
     hooks:
       - id: ruff
         args: [--fix, --unsafe-fixes, --show-fixes]
@@ -123,6 +123,6 @@ repos:
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.10.0
+    rev: 0.10.2
     hooks:
       - id: uv-lock
