@@ -22,7 +22,7 @@ jobs:
 
       - name: Set up UV
         id: setup-uv
-        uses: astral-sh/setup-uv@8cc8d1cbfc1957afca841a8e017611a0c8a1233f
+        uses: astral-sh/setup-uv@447e6d02b15d65b3247cce2d6019f11957285d11
         with:
           python-version: ${{ matrix.python_version }}
 
