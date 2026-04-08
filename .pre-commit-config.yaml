@@ -61,7 +61,7 @@ repos:
           - packaging==25.0
           - pluggy==1.6.0
           - pycparser==2.22
-          - pygments==2.19.2
+          - pygments==2.20.0
           - pymacaroons==0.13.0
           - pynacl==1.5.0
           - pyright==1.1.405
