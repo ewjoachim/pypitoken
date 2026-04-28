@@ -40,7 +40,7 @@ repos:
           - babel==2.17.0
           - beautifulsoup4==4.13.5
           - certifi==2025.8.3
-          - cffi==1.17.1
+          - cffi==2.0.0 ; platform_python_implementation != 'PyPy'
           - charset-normalizer==3.4.3
           - colorama==0.4.6 ; sys_platform == 'win32'
           - coverage==7.10.6
@@ -60,10 +60,11 @@ repos:
           - nodeenv==1.9.1
           - packaging==25.0
           - pluggy==1.6.0
-          - pycparser==2.22
+          - pycparser==2.22 ; implementation_name != 'PyPy' and 
+            platform_python_implementation != 'PyPy'
           - pygments==2.19.2
           - pymacaroons==0.13.0
-          - pynacl==1.5.0
+          - pynacl==1.6.2
           - pyright==1.1.405
           - pytest==8.4.2
           - pytest-cov==6.3.0
