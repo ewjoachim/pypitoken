@@ -97,7 +97,7 @@ repos:
           - urllib3==2.7.0 ; python_full_version >= '3.10'
           - zipp==3.23.0 ; python_full_version < '3.10'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.17
+    rev: v0.15.20
     hooks:
       - id: ruff
         args: [--fix, --unsafe-fixes, --show-fixes]
@@ -108,7 +108,7 @@ repos:
       - id: doc8
 
   - repo: https://github.com/adamchainz/django-upgrade
-    rev: 1.30.0
+    rev: 1.31.1
     hooks:
       - id: django-upgrade
         args: [--target-version, '4.2'] # Replace with Django version
@@ -126,6 +126,6 @@ repos:
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.11.21
+    rev: 0.11.24
     hooks:
       - id: uv-lock
