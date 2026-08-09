@@ -31,8 +31,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-  static-typing:
-    name: Run Pyright
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -41,21 +41,12 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.13"
-          activate-environment: true
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --all-groups
 
-      - name: Extract pyright version from pre-commit
-        id: pre-commit-pyright-version
-        run: >
-          uv export --format pylock.toml
-          | python -c "import tomllib,sys; print('pyright-version='+next(e['version'] for e in tomllib.loads(sys.stdin.read())['packages'] if e['name'] == 'pyright' ))"
-          >> $GITHUB_OUTPUT
-
-      - uses: jakebailey/pyright-action@v3
-        with:
-          version: ${{ steps.pre-commit-pyright-version.outputs.pyright-version }}
+      - name: Run prek
+        run: uvx prek run --all-files
 
   publish:
     name: Publish package to PyPI
@@ -65,7 +56,7 @@ jobs:
       id-token: write
     needs:
       - tests
-      - static-typing
+      - lint
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
