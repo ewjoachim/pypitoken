@@ -38,7 +38,7 @@ Documentation = "https://pypitoken.readthedocs.io/en/latest/"
 [dependency-groups]
 docs = ["Sphinx", "furo", "sphinx-github-changelog"]
 tests = ["pytest", "pytest-cov", "pytest-mock"]
-dev = ["ruff", "basedpyright", "doc8"]
+dev = ["ruff", "basedpyright", "doc8", "zizmor"]
 
 [tool.uv]
 default-groups = ["docs", "tests", "dev"]
@@ -58,6 +58,7 @@ extend-select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "RUF", # ruff
+    "T10", # flake8-debugger
 ]
 fixable = ["ALL"]
 extend-ignore = [

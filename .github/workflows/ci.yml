@@ -8,6 +8,9 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: read
+
 jobs:
   tests:
     strategy:
@@ -18,13 +21,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up UV
         id: setup-uv
         uses: astral-sh/setup-uv@1c15d185f03657a1644ed2684496fb7c6ed59815
         with:
           python-version: ${{ matrix.python_version }}
+          enable-cache: false
 
       - name: Run tests
         run: uv run pytest
@@ -35,12 +41,15 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.13"
+          python-version: "3.14"
+          enable-cache: false
 
       - name: Install dependencies
         run: uv sync --all-groups
@@ -58,10 +67,12 @@ jobs:
       - tests
       - lint
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build wheel & sdist
         run: pipx run uv build
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
