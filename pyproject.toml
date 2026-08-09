@@ -58,7 +58,6 @@ extend-select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "RUF", # ruff
-    "T10", # flake8-debugger
 ]
 fixable = ["ALL"]
 extend-ignore = [
