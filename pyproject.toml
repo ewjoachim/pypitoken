@@ -38,7 +38,7 @@ Documentation = "https://pypitoken.readthedocs.io/en/latest/"
 [dependency-groups]
 docs = ["Sphinx", "furo", "sphinx-github-changelog"]
 tests = ["pytest", "pytest-cov", "pytest-mock"]
-dev = ["ruff", "basedpyright", "doc8", "zizmor"]
+dev = ["ruff", "basedpyright", "doc8", "zizmor", "prek"]
 
 [tool.uv]
 default-groups = ["docs", "tests", "dev"]
