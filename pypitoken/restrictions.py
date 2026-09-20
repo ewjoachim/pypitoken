@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from typing import Any, ClassVar, TypeVar
 
 import jsonschema
+from typing_extensions import Self
 
 from pypitoken import exceptions
 
@@ -80,7 +81,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def _load_value(cls: type[TR], value: dict) -> TR:
+    def _load_value(cls, value: dict) -> Self:
         """
         Create a Restriction from the JSON value stored in the caveat
 
@@ -183,7 +184,7 @@ class Restriction:
         raise NotImplementedError
 
     @classmethod
-    def from_parameters(cls: type[TR], **kwargs) -> TR | None:
+    def from_parameters(cls, **kwargs) -> Self | None:
         """
         Constructs an instance from the parameters passed to `Token.restrict`
         """
@@ -540,7 +541,6 @@ class LegacyNoopRestriction(Restriction):
     def check(self, context: Context) -> None:
         super().check(context=context)
         # Always passes
-        return
 
     def dump(self) -> dict:
         return {"version": 1, "permissions": "user"}
