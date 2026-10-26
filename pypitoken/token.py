@@ -309,7 +309,7 @@ class Token:
         try:
             verifier.verify(self._macaroon, key)
         # https://github.com/ecordell/pymacaroons/issues/51
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             final_exc = exc
             if errors:
                 # (we know it's actually a single item, there cannot be multiple items
