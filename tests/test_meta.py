@@ -35,7 +35,7 @@ def test_Token__restrict__signature():
         restriction_params = dict(
             inspect.signature(subclass.from_parameters).parameters
         )
-        params = {p for p in restriction_params.values() if not p.kind == p.VAR_KEYWORD}
+        params = {p for p in restriction_params.values() if p.kind != p.VAR_KEYWORD}
         assert not params & all_params
         all_params |= params
 
