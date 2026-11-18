@@ -5,10 +5,9 @@ import datetime
 import json
 import time
 from collections.abc import Iterable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 import jsonschema
-from typing_extensions import Self
 
 from pypitoken import exceptions
 
