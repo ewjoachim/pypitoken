@@ -297,12 +297,8 @@ def test__LegacyDateRestriction__from_parameters__fail(kwargs):
         ),
         (
             {
-                "legacy_not_before": datetime.datetime(
-                    2000, 1, 1, tzinfo=datetime.timezone.utc
-                ),
-                "legacy_not_after": datetime.datetime(
-                    2100, 1, 1, tzinfo=datetime.timezone.utc
-                ),
+                "legacy_not_before": datetime.datetime(2000, 1, 1, tzinfo=datetime.UTC),
+                "legacy_not_after": datetime.datetime(2100, 1, 1, tzinfo=datetime.UTC),
             },
             restrictions.LegacyDateRestriction._load_value(
                 value={"nbf": 946_684_800, "exp": 4_102_444_800}
@@ -461,12 +457,8 @@ def test__DateRestriction__from_parameters__fail(kwargs):
         ),
         (
             {
-                "not_before": datetime.datetime(
-                    2000, 1, 1, tzinfo=datetime.timezone.utc
-                ),
-                "not_after": datetime.datetime(
-                    2100, 1, 1, tzinfo=datetime.timezone.utc
-                ),
+                "not_before": datetime.datetime(2000, 1, 1, tzinfo=datetime.UTC),
+                "not_after": datetime.datetime(2100, 1, 1, tzinfo=datetime.UTC),
             },
             restrictions.DateRestriction(
                 not_before=946_684_800, not_after=4_102_444_800
