@@ -80,7 +80,6 @@ addopts = [
     "--cov=pypitoken",
     "--strict-markers",
     "-rfE",
-    "-m not benchmark",
 ]
 testpaths = ["tests"]
 filterwarnings = """
